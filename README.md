@@ -3,14 +3,19 @@
 A static mini-site to search every song played in La fabrock since 2012:
 which show, when, what was played before and after, and how many times.
 
+## Live site
+https://lafabrock.github.io/lafabrock/
+Deployed automatically by GitHub Pages from the main branch.
+
 ## Files
 - `index.html`, `style.css`, `app.js`: the site (no framework, no backend)
 - `data/shows.json`: all shows and tracklists (generated)
 - `data/manual_shows.json`: tracklists you add by hand for shows that have none on Mixcloud
 - `tools/update_data.py`: rebuilds `data/shows.json` from Mixcloud
+- `.github/workflows/update.yml`: weekly GitHub Actions workflow (see below)
 
 ## Hosting
-Copy the whole folder to any web server (nginx, Apache, Caddy, a NAS, GitHub Pages in a private repo…).
+Copy the whole folder to any web server (nginx, Apache, Caddy, a NAS, GitHub Pages…).
 It must be served over HTTP: opening index.html directly from disk will not load the data.
 Quick local test:  `python3 -m http.server 8000` then open http://localhost:8000
 
@@ -19,11 +24,14 @@ To keep it private, protect the folder with your server's basic auth, e.g. nginx
 The page also carries a `noindex` tag so search engines skip it.
 
 ## Updating after a new show
-    pip install requests
-    python3 tools/update_data.py
-It fetches the lafabrock profile, the Radiosixsixsix "la-fabrock" playlist, any
-Radiosixsixsix upload with "fabrock" in its title and every upload on hearthis.at/lafabrock,
-then rewrites data/shows.json (about 1 min). Add --no-hearthis to skip hearthis.
+Fully automated: the GitHub Actions workflow `.github/workflows/update.yml` runs every
+Saturday at 09:00 UTC, rebuilds `data/shows.json` from Mixcloud (lafabrock profile,
+Radiosixsixsix "la-fabrock" playlist, any Radiosixsixsix upload with "fabrock" in its
+title, and hearthis.at/lafabrock), commits the new data and Pages redeploys automatically.
+You can also trigger it manually: tab Actions → "Update archive and deploy" → Run workflow.
+
+Locally instead:  `pip install requests` then `python3 tools/update_data.py` (about 1 min).
+Add --no-hearthis to skip hearthis.
 
 ## How hearthis uploads are merged (tools/hearthis.py)
 Each hearthis upload is matched to Mixcloud by episode code (s03e15, 0309…), series number
