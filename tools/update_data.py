@@ -3,8 +3,10 @@
 
 Fetches every show from the Mixcloud profile "lafabrock", the "la-fabrock"
 playlist of Radiosixsixsix, any Radiosixsixsix upload whose title contains
-"fabrock", and the hearthis.at/lafabrock uploads (see tools/hearthis.py;
-skip them with --no-hearthis). Tracklists come from Mixcloud's tracklist data. Shows without an
+"fabrock", the "la-fabrock-collabs" playlist of lafabrock (collab mixes
+hosted by other accounts), and the hearthis.at/lafabrock uploads
+(see tools/hearthis.py; skip them with --no-hearthis).
+Tracklists come from Mixcloud's tracklist data. Shows without an
 official tracklist can be filled in data/manual_shows.json (matched by name).
 
 Usage:  python3 tools/update_data.py        (needs: pip install requests)
@@ -102,6 +104,17 @@ def main():
         if 'fabrock' in o['name'].lower():
             rs.setdefault(o['key'], o)
     items += [('Radiosixsixsix', o) for o in rs.values()]
+    # collab playlist: mixes hosted by other accounts featuring La fabrock
+    for o in paged(f'{API}/lafabrock/playlists/la-fabrock-collabs/cloudcasts/?limit=100'):
+        items.append((o.get('user', {}).get('username') or 'lafabrock', o))
+    # dedupe (a mix can appear in several sources)
+    seen, uniq = set(), []
+    for u, o in items:
+        if o['key'] in seen:
+            continue
+        seen.add(o['key'])
+        uniq.append((u, o))
+    items = uniq
     print(len(items), 'shows found. Fetching details and tracklists…')
 
     def detail(it):
