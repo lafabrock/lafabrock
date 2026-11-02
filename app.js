@@ -130,6 +130,7 @@
     if (p0 === 'songs') { setTab('songs'); return viewSongs(params); }
     if (p0 === 'shows') { setTab('shows'); return viewShows(params); }
     if (p0 === 'artists') { setTab('artists'); return viewArtists(params); }
+    if (p0 === 'random') { setTab('random'); return viewRandom(params); }
     setTab('home'); return viewHome();
   }
   const replaceParams = (base, obj) => {
@@ -556,14 +557,14 @@
     draw();
   }
 
-  function viewShow(id, params) {
+  function viewShow(id, params, opts) {
     const s = DB.showById.get(id);
     if (!s) return notFound('This show is not in the archive.');
     const idx = DB.shows.indexOf(s);
     const prev = DB.shows[idx - 1], next = DB.shows[idx + 1];
     let n = 0;
     app.innerHTML = `
-      <a class="back" href="#/shows">← All shows</a>
+      ${opts?.back ?? '<a class="back" href="#/shows">← All shows</a>'}
       <div class="detail-head ${s.cover ? '' : 'nocover'}">
         ${s.cover ? `<img class="cover" src="${esc(s.cover)}" alt="" width="160" height="160" loading="lazy" onerror="this.remove();this.parentElement&&this.parentElement.classList.add('nocover')">` : ''}
         <div>
@@ -1024,6 +1025,48 @@
 
   function notFound(msg) {
     app.innerHTML = `<div class="empty"><b>Not found</b>${esc(msg)}<br><br><a href="#/songs">Back to search</a></div>`;
+  }
+
+  // ---------- weekly random show ----------
+  // One show drawn by chance every week: weeks roll over on Friday at 00:00,
+  // in step with the weekly data update. The draw is seeded, so every visitor
+  // sees the same show until the next Friday, without any stored state.
+  const FRIDAY_ANCHOR = Date.UTC(2026, 9, 30); // a Friday at 00:00 UTC
+  const hashStr = s => { let h = 1779033703; for (let i = 0; i < s.length; i++) { h = Math.imul(h ^ s.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; } return h >>> 0; };
+  const mulberry32 = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const weekIdx = () => Math.floor((Date.now() - FRIDAY_ANCHOR) / 604800000);
+  const randomPool = () => DB.shows.filter(s => s.items.length && !s.version_of && s.counted); // known tracklist, no Music Only duplicates or alternate versions
+  function weeklyShow() {
+    const pool = randomPool();
+    const rnd = mulberry32(hashStr('fabrock-weekly-' + weekIdx()));
+    return pool[Math.floor(rnd() * pool.length)];
+  }
+  function viewRandom(params) {
+    const weekly = weeklyShow();
+    const rp = params.get('reroll');
+    const pick = rp && /^\d+$/.test(rp) ? DB.showById.get(+rp) : null;
+    const s = pick && pick.items.length ? pick : weekly;
+    const rerolled = s !== weekly;
+    const ws = new Date(FRIDAY_ANCHOR + weekIdx() * 604800000);
+    const next = new Date(FRIDAY_ANCHOR + (weekIdx() + 1) * 604800000);
+    const dfmt = d => d.toLocaleDateString('en', { weekday: 'long', day: 'numeric', month: 'long' });
+    const head = `
+      <section class="hero" style="padding-bottom:0">
+        <div class="eyebrow">Weekly random show</div>
+        <h1>${rerolled ? 'Your personal pick' : 'Show of the week'}</h1>
+        <p>${rerolled ? 'Drawn by chance just for you. ' : `Drawn by chance from ${plural(randomPool().length, 'show')} with a known tracklist. `}A new show is drawn every Friday at midnight: this week runs from ${esc(dfmt(ws))} to ${esc(dfmt(next))}.</p>
+        <div class="btns" style="margin-top:16px">
+          <button class="btn" id="rnd-again">🎲 Draw another show</button>
+          ${rerolled ? '<a class="btn ghost" href="#/random">↩ Back to the show of the week</a>' : ''}
+          <a class="btn ghost" href="#/shows">All shows →</a>
+        </div>
+      </section>`;
+    viewShow(s.id, params, { back: head });
+    document.getElementById('rnd-again').onclick = () => {
+      const pool = randomPool(); let c;
+      do { c = pool[Math.floor(Math.random() * pool.length)]; } while (c.id === s.id && pool.length > 1);
+      location.hash = '#/random?reroll=' + c.id;
+    };
   }
 
   // ---------- boot ----------
