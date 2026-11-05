@@ -47,6 +47,9 @@
       s.items = s.tracks.map((t, i) => ({ type: t[0], artist: t[1], title: t[2], ts: t[3], pos: i + 1, show: s, counted: s.counted && t[4] !== 0 }));
       s.links = (s.links || (s.url ? [{ site: 'Mixcloud', url: s.url }] : [])).map(l => ({ ...l, url: safeUrl(l.url), stream: l.stream ? safeUrl(l.stream) : '' })).filter(l => l.url);
       s.cover = s.cover && /^https:\/\//.test(s.cover) ? s.cover : '';
+      // Spotify playlist pasted in the Mixcloud description -> "Listen on Spotify" button (link rebuilt from the id only)
+      const sp = /open\.spotify\.com\/(?:intl-[a-z-]+\/)?playlist\/([A-Za-z0-9]{22})/.exec(s.description || '');
+      s.spotify = sp ? 'https://open.spotify.com/playlist/' + sp[1] : '';
       s.platform = s.account === 'hearthis' ? (s.version_of ? 'alternate' : 'hearthis') : 'mixcloud';
       const tl = s.items.filter(t => t.type === 'track');
       s.nTracks = tl.length;
@@ -578,7 +581,7 @@
             ${s.links.filter(l => l.site === 'hearthis' && s.account !== 'hearthis').map(l => `<span>${(l.plays || 0).toLocaleString('en')} plays on hearthis</span>`).join('')}
             <span>Tracklist: ${esc(s.source)}</span>
           </div>
-          <div class="btns">${s.links.map((l, i) => `<a class="btn ${i ? 'ghost' : ''}" href="${esc(l.url)}" target="_blank" rel="noopener">Listen on ${esc(l.site)} ↗</a>`).join('')}</div>
+          <div class="btns">${s.links.map((l, i) => `<a class="btn ${i ? 'ghost' : ''}" href="${esc(l.url)}" target="_blank" rel="noopener">Listen on ${esc(l.site)} ↗</a>`).join('')}${s.spotify ? `<a class="btn ghost" href="${esc(s.spotify)}" target="_blank" rel="noopener">Listen on Spotify ↗</a>` : ''}</div>
         </div>
       </div>
       ${episodeNav(s)}
@@ -669,7 +672,7 @@
           <h1>${esc(shortName(latest))}</h1>
           <div class="facts">${latest.season ? `<a href="#/season/${latest.season}">Season ${latest.season}, episode ${latest.episode}</a>` : `<span>${esc(latest.category)}</span>`}${latest.duration ? `<span>${latest.duration} min</span>` : ''}<span>${plural(latest.nTracks, 'track')}</span></div>
           ${desc ? `<div class="feature-desc">${esc(desc)}</div>` : ''}
-          <div class="btns">${latest.links.map((l, i) => `<a class="btn ${i ? 'ghost' : ''}" href="${esc(l.url)}" target="_blank" rel="noopener">Listen on ${esc(l.site)} ↗</a>`).join('')}<a class="btn ghost" href="#/show/${latest.id}">Full tracklist</a></div>
+          <div class="btns">${latest.links.map((l, i) => `<a class="btn ${i ? 'ghost' : ''}" href="${esc(l.url)}" target="_blank" rel="noopener">Listen on ${esc(l.site)} ↗</a>`).join('')}${latest.spotify ? `<a class="btn ghost" href="${esc(latest.spotify)}" target="_blank" rel="noopener">Listen on Spotify ↗</a>` : ''}<a class="btn ghost" href="#/show/${latest.id}">Full tracklist</a></div>
         </div>
         ${tl.length ? `<ol class="feature-tl">${tl.slice(0, 8).map(t => `<li><a href="#/song/${encodeURIComponent(t.key)}"><span class="tt">${esc(t.title)}</span> <span class="ta">${esc(t.artist)}</span></a></li>`).join('')}${tl.length > 8 ? `<li class="more-li"><a href="#/show/${latest.id}">+ ${tl.length - 8} more</a></li>` : ''}</ol>` : ''}
       </section>
