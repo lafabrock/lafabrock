@@ -589,6 +589,7 @@
       ${s.description ? `<div class="desc">${esc(s.description)}</div>` : ''}
       ${s.tags.length ? `<div class="tags">${s.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
       ${commentsBlock(s)}
+      ${spotifyKit(s)}
       ${localBlock(s)}
       ${playable(s) ? `<div class="listen-here"><button class="btn" data-play="0">▶ Play this show here</button>${hasTs(s) ? `<span class="small">Click a song to jump straight to it in the mix.</span>` : `<span class="small">No timestamps in this tracklist, so songs can't be jumped to.</span>`}</div>` : ''}
       <div class="sec-head"><h2>Tracklist</h2><span class="count">× = times this song was played across all shows</span></div>
@@ -605,6 +606,7 @@
       </div>`;
     app.querySelectorAll('[data-play]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); Player.open(s, +b.dataset.play || 0); }));
     bindLocal(s);
+    bindKit(s);
     Player.markShow();
     const tp = params && params.get('t'); const t0 = tp && /^\d+$/.test(tp) ? +tp : tsSec(tp || '');
     if (t0 != null && playable(s)) {
@@ -615,6 +617,72 @@
       app.querySelector('[data-cue]')?.addEventListener('click', () => Player.open(s, t0));
       app.querySelector('[data-play="0"]')?.classList.add('ghost');
     } else scrollTo(0, 0);
+  }
+
+  // ---------- Spotify playlist kit: everything needed to build an episode playlist by hand ----------
+  const SITE = 'https://lafabrock.github.io/lafabrock/';
+  const kitData = s => {
+    const code = s.season != null && s.episode != null ? `S${String(s.season).padStart(2, '0')}E${String(s.episode).padStart(2, '0')}` : '';
+    const page = SITE + '#/show/' + s.id;
+    const mc = (s.links.find(l => l.site === 'Mixcloud') || s.links[0] || {}).url || '';
+    const desc = `Tracklist of La fabrock${code ? ' ' + code : ''} on Radio 666.${mc ? ' Full mix: ' + mc : ''} Tracklist: ${page}`.slice(0, 300);
+    return {
+      name: s.name.slice(0, 100),
+      tracks: s.items.filter(t => t.type === 'track').map(t => `${t.artist} - ${t.title}`).join('\n'),
+      desc, page,
+      cover: s.cover ? s.cover.replace(/\/unsafe\/\d+x\d+\//, '/unsafe/1000x1000/') : '',
+    };
+  };
+  function spotifyKit(s) {
+    if (!s.nTracks) return '';
+    const k = kitData(s);
+    const box = (id, label, text, rows) => `<div class="kit-step"><div class="kit-head"><b>${label}</b><button class="btn ghost kit-btn" data-kcopy="${id}">Copy</button></div>
+      <textarea id="kit-${id}" rows="${rows}" readonly>${esc(text)}</textarea></div>`;
+    return `<details class="kit"><summary>Spotify playlist kit${s.spotify ? ' <span class="small">· playlist already linked</span>' : ''}</summary>
+      <p class="small">For TuneMyMusic (text import) and the playlist's “Edit details” in Spotify.</p>
+      <div class="kit-step"><div class="kit-head"><b>1. Tracklist (${s.nTracks} songs)</b><span><button class="btn ghost kit-btn" data-kcopy="tracks">Copy</button><button class="btn ghost kit-btn" data-ktxt>Download .txt</button></span></div>
+        <textarea id="kit-tracks" rows="6" readonly>${esc(k.tracks)}</textarea></div>
+      ${box('name', '2. Playlist name', k.name, 2)}
+      <div class="kit-step"><div class="kit-head"><b>3. Cover</b>${k.cover ? '<button class="btn ghost kit-btn" data-kcover>Download PNG</button>' : '<span class="small">No cover for this show</span>'}</div>
+        ${k.cover ? `<img class="kit-cover" src="${esc(k.cover)}" alt="" loading="lazy">` : ''}</div>
+      ${box('desc', '4. Playlist description', k.desc, 3)}
+      <div class="kit-step"><div class="kit-head"><b>5. Line for the Mixcloud description</b><button class="btn ghost kit-btn" data-kcopy="mc">Copy</button></div>
+        <input id="kit-url" type="url" placeholder="Paste the Spotify playlist link here" value="${esc(s.spotify)}">
+        <textarea id="kit-mc" rows="2" readonly></textarea></div>
+    </details>`;
+  }
+  function bindKit(s) {
+    const kit = app.querySelector('.kit');
+    if (!kit) return;
+    const k = kitData(s), $ = id => kit.querySelector('#kit-' + id);
+    const flash = (b, txt) => { const o = b.textContent; b.textContent = txt; setTimeout(() => b.textContent = o, 1500); };
+    const save = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); };
+    const fileBase = (s.season != null && s.episode != null ? `La fabrock s${String(s.season).padStart(2, '0')}e${String(s.episode).padStart(2, '0')}` : s.name).replace(/[\\/:*?"<>|]+/g, ' ').trim();
+    const mcLine = () => {
+      const m = /open\.spotify\.com\/(?:intl-[a-z-]+\/)?playlist\/([A-Za-z0-9]{22})/.exec($('url').value);
+      $('mc').value = m ? 'Now available as a Spautifaille playlist https://open.spotify.com/playlist/' + m[1] : '';
+    };
+    $('url').addEventListener('input', mcLine); mcLine();
+    kit.querySelectorAll('[data-kcopy]').forEach(b => b.addEventListener('click', async () => {
+      const ta = $(b.dataset.kcopy);
+      if (!ta.value) return flash(b, 'Paste the link first');
+      try { await navigator.clipboard.writeText(ta.value); } catch { ta.select(); document.execCommand('copy'); }
+      flash(b, 'Copied ✓');
+    }));
+    kit.querySelector('[data-ktxt]').addEventListener('click', () => save(new Blob([k.tracks + '\n'], { type: 'text/plain;charset=utf-8' }), fileBase + '.txt'));
+    kit.querySelector('[data-kcover]')?.addEventListener('click', async e => {
+      const b = e.currentTarget;
+      try {
+        const img = await new Promise((ok, ko) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => ok(i); i.onerror = ko; i.src = k.cover + (k.cover.includes('?') ? '&' : '?') + 'kit=1'; });
+        const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+        c.getContext('2d').drawImage(img, 0, 0);
+        const blob = await new Promise((ok, ko) => c.toBlob(x => x ? ok(x) : ko(), 'image/png'));
+        save(blob, fileBase + '.png'); flash(b, 'Downloaded ✓');
+      } catch {
+        // Mixcloud refused the conversion: open the full-size image so it can be saved by hand (Spotify also takes JPEG)
+        window.open(k.cover, '_blank', 'noopener'); flash(b, 'Opened in a new tab');
+      }
+    });
   }
 
   function platformTag(s) {
