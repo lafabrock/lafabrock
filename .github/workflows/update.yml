@@ -21,13 +21,18 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
+      # stops here (and GitHub e-mails you) if Mixcloud answered badly:
+      # tracklists lost, shows missing… The published data is left untouched.
       - name: Rebuild data/shows.json from Mixcloud
         run: python3 tools/update_data.py
+
+      - name: Build the public pages (one page per show, sitemap, share tags)
+        run: python3 tools/build_pages.py
 
       - name: Commit updated data (if changed)
         run: |
           git config user.name "fabrock-bot"
           git config user.email "actions@github.com"
-          git add data/
+          git add data/ show/ sitemap.xml index.html
           git diff --cached --quiet || git commit -m "chore: update show archive $(date -u +%F) [skip ci]"
           git push

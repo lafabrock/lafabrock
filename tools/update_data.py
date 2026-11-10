@@ -10,6 +10,7 @@ Tracklists come from Mixcloud's tracklist data. Shows without an
 official tracklist can be filled in data/manual_shows.json (matched by name).
 
 Usage:  python3 tools/update_data.py        (needs: pip install requests)
+        --force   write the data even if the safety check fails (see check() below)
 """
 import json, os, re, sys, time, concurrent.futures as cf
 import requests
@@ -52,7 +53,7 @@ def tracklist(user, slug):
             return (r['data']['cloudcastLookup'] or {}).get('sections') or []
         except Exception:
             time.sleep(2 + i * 2)
-    return []
+    return None  # failed: not the same thing as "no tracklist"
 
 
 def ts(sec):
@@ -96,6 +97,27 @@ def clean(t):
     return re.sub(r'\s+', ' ', t).strip() if '\n' not in t else t.strip()
 
 
+def check(shows, failed):
+    """Refuse to overwrite good data with a broken fetch (Mixcloud down, API changed…)."""
+    problems = []
+    if failed:
+        problems.append(f'{len(failed)} tracklist(s) could not be fetched, e.g. ' + '; '.join(failed[:5]))
+    path = os.path.join(DATA, 'shows.json')
+    if not os.path.exists(path):
+        return problems
+    old = json.load(open(path, encoding='utf-8'))['shows']
+    count = lambda ss: sum(1 for s in ss for t in s['tracks'] if t[0] == 'track')
+    if len(shows) < len(old):
+        problems.append(f'{len(old) - len(shows)} show(s) disappeared ({len(old)} before, {len(shows)} now)')
+    if count(shows) < count(old) * 0.99:
+        problems.append(f'track count dropped from {count(old)} to {count(shows)}')
+    new_by_url = {s.get('url'): s for s in shows}
+    lost = [s['name'] for s in old if s['tracks'] and s.get('url') in new_by_url and not new_by_url[s['url']]['tracks']]
+    if lost:
+        problems.append(f'{len(lost)} show(s) lost their tracklist, e.g. ' + '; '.join(lost[:5]))
+    return problems
+
+
 def main():
     print('Listing shows…')
     items = [('lafabrock', o) for o in paged(f'{API}/lafabrock/cloudcasts/?limit=100')]
@@ -120,7 +142,9 @@ def main():
     def detail(it):
         user, o = it
         d = get(API + o['key'])
-        d['_sections'] = tracklist(user, o['slug'])
+        secs = tracklist(user, o['slug'])
+        d['_failed'] = secs is None
+        d['_sections'] = secs or []
         d['_user'] = user
         return d
 
@@ -199,6 +223,16 @@ def main():
         for s in shows:
             for p in s.get('version_of') or []:
                 by_id[p].setdefault('versions', []).append(s['id'])
+    failed = [d['name'] for d in full if d['_failed']]
+    from postprocess import finalize
+    finalize(shows)
+    problems = check(shows, failed)
+    if problems and '--force' not in sys.argv:
+        print('SAFETY CHECK FAILED, data/shows.json was NOT updated:')
+        for p in problems:
+            print('  -', p)
+        print('If this is expected, run again with --force.')
+        return 1
     out = dict(updated=time.strftime('%Y-%m-%d'), shows=shows)
     with open(os.path.join(DATA, 'shows.json'), 'w', encoding='utf-8') as f:
         json.dump(out, f, ensure_ascii=False, separators=(',', ':'))

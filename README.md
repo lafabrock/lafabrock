@@ -1,58 +1,91 @@
-# La fabrock – Show archive
+# La fabrock – l'archive
 
-A static mini-site to search every song played in La fabrock since 2012:
-which show, when, what was played before and after, and how many times.
+Le site public de La fabrock, l'émission de Radio 666 : toutes les tracklists depuis 2012,
+la recherche par titre et par artiste, ce qui passait avant et après, et combien de fois.
 
-## Live site
+## Site
 https://lafabrock.github.io/lafabrock/
-Deployed automatically by GitHub Pages from the main branch.
+Publié automatiquement par GitHub Pages depuis la branche `main`.
 
-## Files
-- `index.html`, `style.css`, `app.js`: the site (no framework, no backend)
-- `data/shows.json`: all shows and tracklists (generated)
-- `data/manual_shows.json`: tracklists you add by hand for shows that have none on Mixcloud
-- `tools/update_data.py`: rebuilds `data/shows.json` from Mixcloud
-- `.github/workflows/update.yml`: weekly GitHub Actions workflow (see below)
+## Fichiers
+- `index.html`, `style.css`, `app.js` : l'archive interactive (sans framework ni serveur)
+- `show/<identifiant>/` : une page statique par émission (pochette, tracklist, liens d'écoute),
+  celle à partager sur les réseaux : elle affiche la pochette dans l'aperçu du lien
+- `show/index.html` : la liste de toutes les émissions ; `sitemap.xml` : le plan du site pour Google
+- `data/shows.json` : toutes les émissions et tracklists (généré)
+- `data/manual_shows.json` : tracklists ajoutées à la main pour les émissions qui n'en ont pas sur Mixcloud
+- `data/overrides.json` : corrections par émission, par exemple la date de diffusion
+- `data/aliases.json` : graphies d'artistes à corriger
+- `data/slugs.json` : l'identifiant permanent de chaque émission (ne pas modifier)
+- `tools/update_data.py` : reconstruit `data/shows.json` depuis Mixcloud et hearthis
+- `tools/postprocess.py` : identifiants, dates de diffusion, alias (lancé par `update_data.py`)
+- `tools/build_pages.py` : génère les pages statiques, le sitemap et les balises de partage
+- `.github/workflows/update.yml` : la mise à jour automatique hebdomadaire
 
-## Hosting
-Copy the whole folder to any web server (nginx, Apache, Caddy, a NAS, GitHub Pages…).
-It must be served over HTTP: opening index.html directly from disk will not load the data.
-Quick local test:  `python3 -m http.server 8000` then open http://localhost:8000
+## Adresses des émissions
+Chaque émission a un identifiant permanent : `s14e05` pour un épisode, un nom court pour les
+autres émissions (`funk-soul-session-11-with-la-fabrock`). Deux adresses existent :
+- `https://lafabrock.github.io/lafabrock/show/s14e05/` : la page à partager (Spotify, Instagram, Facebook)
+- `https://lafabrock.github.io/lafabrock/#/show/s14e05` : la même émission dans l'archive interactive
 
-To keep it private, protect the folder with your server's basic auth, e.g. nginx:
-    location / { auth_basic "La fabrock"; auth_basic_user_file /etc/nginx/.htpasswd; }
-The page also carries a `noindex` tag so search engines skip it.
+Un identifiant ne change jamais une fois donné (il est gardé dans `data/slugs.json`).
+Les anciens liens numériques (`#/show/418`) redirigent vers la bonne émission.
 
-## Updating after a new show
-Fully automated: the GitHub Actions workflow `.github/workflows/update.yml` runs every
-Saturday at 09:00 UTC, rebuilds `data/shows.json` from Mixcloud (lafabrock profile,
-Radiosixsixsix "la-fabrock" playlist, any Radiosixsixsix upload with "fabrock" in its
-title, and hearthis.at/lafabrock), commits the new data and Pages redeploys automatically.
-You can also trigger it manually: tab Actions → "Update archive and deploy" → Run workflow.
+## Mise à jour après une nouvelle émission
+Automatique : le workflow tourne chaque samedi à 9 h UTC. Il relit Mixcloud (profil lafabrock,
+playlist « la-fabrock » de Radiosixsixsix, tout upload de Radiosixsixsix contenant « fabrock »,
+playlist « la-fabrock-collabs ») et hearthis.at/lafabrock, régénère les pages, enregistre le
+résultat, et GitHub Pages republie le site.
+Lancement manuel : onglet Actions → « Update archive and deploy » → Run workflow.
 
-Locally instead:  `pip install requests` then `python3 tools/update_data.py` (about 1 min).
-Add --no-hearthis to skip hearthis.
+**Garde-fou :** si Mixcloud répond mal (tracklists qui disparaissent, émissions manquantes,
+nombre de morceaux en forte baisse), le workflow s'arrête sans rien publier et GitHub envoie un
+e-mail. Le site garde alors les données de la semaine précédente. Si la baisse est voulue (une
+tracklist supprimée exprès), lancer `python3 tools/update_data.py --force` en local.
 
-## How hearthis uploads are merged (tools/hearthis.py)
-Each hearthis upload is matched to Mixcloud by episode code (s03e15, 0309…), series number
-(Topspin #12, Funky Explorations #46, ZKR5…) or title, then compared by duration:
-- same mix (within 3 min): the hearthis link is added to the Mixcloud show
-- different duration: added as an "alternate version" linked to the original, using the
-  tracklist written in the hearthis description; songs already in the original are not counted twice
-- no match: added as a hearthis-only show
-Change TOL_MIN in tools/hearthis.py to make the "same mix" rule stricter or looser.
-Can run weekly with cron:  `0 9 * * 5 cd /var/www/fabrock && python3 tools/update_data.py`
+En local : `pip install requests` puis `python3 tools/update_data.py` (environ 1 min) et
+`python3 tools/build_pages.py`. Ajouter `--no-hearthis` pour ignorer hearthis.
 
-## Adding a tracklist by hand
-Edit data/manual_shows.json. Each entry: `match_name` (exact Mixcloud title, or a new name for a
-show not online yet), `name`, `date` (YYYY-MM-DD), `source`, and `tracks`:
-`[{"type": "track", "artist": "...", "title": "...", "ts": "12:34"}]`.
-An official Mixcloud tracklist always takes priority over the manual one.
+## Corriger une date de diffusion
+Le site affiche la date de diffusion quand il la connaît, sinon la date de mise en ligne sur
+Mixcloud. Les dates écrites dans les titres (20140717, 7th January 2016…) sont reprises
+automatiquement. Pour les autres, ajouter une ligne dans `data/overrides.json` :
+`"s14e05": {"aired": "2026-10-30"}`, puis `python3 tools/postprocess.py` et
+`python3 tools/build_pages.py` (ou attendre la mise à jour du samedi).
 
-## Playing files from your own computer
-Click "Local files" (top bar, Chrome or Edge on a computer) and pick your mixes folder
-(e.g. D:\LA FABROCK). The site reads only file names until you press play; nothing is uploaded.
-Expected layout: sNN\SSEE[_name]\ holds the full mixes (1402.mp3, 1401_live.mp3…) and
-sNN\SSEE[_name]\SSEE_xprt\ holds songs named "NNN - Title - Artist.mp3".
-The browser remembers the folder; on the next visit click "Reconnect local files" once.
-Other browsers (Firefox, Safari) can pick the folder too but have to be asked again each visit.
+## Corriger la graphie d'un artiste
+Les variantes de majuscules, d'espaces et de ponctuation (Jay Z, JAY-Z, JayZ) sont fusionnées
+automatiquement. Pour les autres, ajouter `"graphie trouvée": "graphie à garder"` dans
+`data/aliases.json`.
+
+## Ajouter une tracklist à la main
+Modifier `data/manual_shows.json`. Chaque entrée : `match_name` (titre Mixcloud exact, ou un
+nouveau nom pour une émission pas encore en ligne), `name`, `date` (AAAA-MM-JJ), `source` et
+`tracks` : `[{"type": "track", "artist": "...", "title": "...", "ts": "12:34"}]`.
+Une tracklist officielle sur Mixcloud a toujours la priorité sur celle ajoutée à la main.
+
+## Rapprochement avec hearthis (tools/hearthis.py)
+Chaque upload hearthis est rapproché de Mixcloud par code d'épisode (s03e15, 0309…), numéro de
+série (Topspin #12, Funky Explorations #46, ZKR5…) ou titre, puis comparé par durée :
+- même mix (à 3 min près) : le lien hearthis est ajouté à l'émission Mixcloud
+- durée différente : ajouté comme « version alternative » liée à l'original, avec la tracklist de
+  la description hearthis ; les titres déjà dans l'original ne sont pas comptés deux fois
+- aucune correspondance : ajouté comme émission seulement sur hearthis
+Modifier `TOL_MIN` dans `tools/hearthis.py` pour rendre la règle « même mix » plus ou moins stricte.
+
+## Référencement
+Le site est public et indexable. Pour accélérer sa prise en compte par Google, déclarer
+`https://lafabrock.github.io/lafabrock/` dans Google Search Console et y soumettre
+`https://lafabrock.github.io/lafabrock/sitemap.xml`.
+
+## Écouter les fichiers de son ordinateur
+Cliquer sur « Fichiers locaux » (barre du haut, Chrome ou Edge sur ordinateur) et choisir le
+dossier des mixes (ex. D:\LA FABROCK). Le site ne lit que les noms de fichiers jusqu'à la lecture ;
+rien n'est envoyé. Organisation attendue : `sNN\SSEE[_nom]\` contient les mixes complets
+(1402.mp3, 1401_live.mp3…) et `sNN\SSEE[_nom]\SSEE_xprt\` les morceaux nommés
+« NNN - Titre - Artiste.mp3 ». Le navigateur se souvient du dossier ; à la visite suivante,
+cliquer une fois sur « Reconnecter les fichiers locaux ».
+Les autres navigateurs (Firefox, Safari) peuvent aussi choisir le dossier, mais le redemandent à chaque visite.
+
+## Tester en local
+Le site doit être servi en HTTP : `python3 -m http.server 8000` puis http://localhost:8000
