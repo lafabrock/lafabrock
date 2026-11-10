@@ -78,14 +78,5 @@ Le site est public et indexable. Pour accélérer sa prise en compte par Google,
 `https://lafabrock.github.io/lafabrock/` dans Google Search Console et y soumettre
 `https://lafabrock.github.io/lafabrock/sitemap.xml`.
 
-## Écouter les fichiers de son ordinateur
-Cliquer sur « Fichiers locaux » (barre du haut, Chrome ou Edge sur ordinateur) et choisir le
-dossier des mixes (ex. D:\LA FABROCK). Le site ne lit que les noms de fichiers jusqu'à la lecture ;
-rien n'est envoyé. Organisation attendue : `sNN\SSEE[_nom]\` contient les mixes complets
-(1402.mp3, 1401_live.mp3…) et `sNN\SSEE[_nom]\SSEE_xprt\` les morceaux nommés
-« NNN - Titre - Artiste.mp3 ». Le navigateur se souvient du dossier ; à la visite suivante,
-cliquer une fois sur « Reconnecter les fichiers locaux ».
-Les autres navigateurs (Firefox, Safari) peuvent aussi choisir le dossier, mais le redemandent à chaque visite.
-
 ## Tester en local
 Le site doit être servi en HTTP : `python3 -m http.server 8000` puis http://localhost:8000

@@ -177,120 +177,7 @@
   const tsSec = ts => { if (ts == null || ts === '') return null; const p = String(ts).trim().split(':').map(Number); if (p.some(isNaN) || p.length < 2) return null; return p.reduce((n, x) => n * 60 + x, 0); };
   const fmtTs = sec => { const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = Math.floor(sec % 60); return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0'); };
 
-  // ---------- local files (your own computer only) ----------
-  // Reads a folder such as D:\LA FABROCK laid out as sNN\SSEE[_name]\ with full mixes inside
-  // and SSEE_xprt\NNN - Title - Artist.mp3 for single songs. Files never leave the computer.
-  const AUDIO = /\.(mp3|wav|m4a|aac|flac|ogg|aif|aiff)$/i;
-  const Local = (() => {
-    const eps = new Map();
-    let state = 'off', root = null, nFiles = 0;
-    const supported = 'showDirectoryPicker' in window || (matchMedia('(pointer: fine)').matches && 'webkitdirectory' in document.createElement('input'));
-    const idb = (mode, fn) => new Promise((ok, ko) => {
-      const r = indexedDB.open('lafabrock', 1);
-      r.onupgradeneeded = () => r.result.createObjectStore('h');
-      r.onerror = () => ko(r.error);
-      r.onsuccess = () => { try { const tx = r.result.transaction('h', mode); const q = fn(tx.objectStore('h')); tx.oncomplete = () => ok(q && q.result); tx.onerror = () => ko(tx.error); } catch (e) { ko(e); } };
-    });
-    const epKey = (se, ep) => se * 1000 + ep;
-    function addFile(folder, sub, name, size, get) {
-      const m = folder.match(/^(\d{2})(\d{2})(?:\D|$)/);
-      if (!m || !AUDIO.test(name)) return;
-      const k = epKey(+m[1], +m[2]);
-      let e = eps.get(k); if (!e) { e = { folder, mixes: [], tracks: [] }; eps.set(k, e); }
-      nFiles++;
-      if (sub && /xprt/i.test(sub)) {
-        const base = name.replace(AUDIO, '');
-        const parts = base.split(' - ');
-        const n = parseInt(parts[0], 10);
-        const artist = parts.length > 2 ? parts[parts.length - 1].trim() : '';
-        const title = (parts.length > 2 ? parts.slice(1, -1) : parts.slice(1)).join(' - ').trim();
-        e.tracks.push({ n: isNaN(n) ? null : n, title, artist, key: akey(artist) + '|' + norm(title), nt: norm(title), name, get });
-      } else if (!sub) e.mixes.push({ name, size, get });
-    }
-    async function walk(dir) {
-      eps.clear(); nFiles = 0;
-      for await (const [sn, sh] of dir.entries()) {
-        if (sh.kind !== 'directory' || !/^s\d{1,2}$/i.test(sn)) continue;
-        for await (const [en, eh] of sh.entries()) {
-          if (eh.kind !== 'directory') continue;
-          for await (const [fn, fh] of eh.entries()) {
-            if (fh.kind === 'file') { const f = await fh.getFile(); addFile(en, '', fn, f.size, () => fh.getFile()); }
-            else if (/xprt/i.test(fn)) for await (const [tn, th] of fh.entries()) if (th.kind === 'file') addFile(en, fn, tn, 0, () => th.getFile());
-          }
-        }
-      }
-      for (const e of eps.values()) {
-        const code = e.folder.slice(0, 4);
-        // main mix first: "1402.mp3", then live, then the rest by size
-        e.mixes.sort((x, y) => (y.name.toLowerCase().startsWith(code + '.') - x.name.toLowerCase().startsWith(code + '.')) || (y.size - x.size));
-        e.tracks.sort((x, y) => (x.n ?? 999) - (y.n ?? 999));
-      }
-      state = 'ready';
-    }
-    function fromFileList(files) {
-      eps.clear(); nFiles = 0;
-      for (const f of files) {
-        const p = (f.webkitRelativePath || '').split('/');
-        const si = p.findIndex(x => /^s\d{1,2}$/i.test(x));
-        if (si < 0 || p.length < si + 3) continue;
-        const folder = p[si + 1], rest = p.slice(si + 2);
-        if (rest.length === 1) addFile(folder, '', rest[0], f.size, async () => f);
-        else if (rest.length === 2) addFile(folder, rest[0], rest[1], f.size, async () => f);
-      }
-      for (const e of eps.values()) { const code = e.folder.slice(0, 4); e.mixes.sort((x, y) => (y.name.toLowerCase().startsWith(code + '.') - x.name.toLowerCase().startsWith(code + '.')) || (y.size - x.size)); e.tracks.sort((x, y) => (x.n ?? 999) - (y.n ?? 999)); }
-      state = 'ready';
-    }
-    async function connect() {
-      try {
-        if ('showDirectoryPicker' in window) {
-          if (root && state === 'permission') {
-            if (await root.requestPermission({ mode: 'read' }) !== 'granted') return;
-          } else {
-            root = await window.showDirectoryPicker({ id: 'lafabrock', mode: 'read' });
-            idb('readwrite', st => st.put(root, 'root')).catch(() => {});
-          }
-          setBtn('Lecture du dossier…'); await walk(root);
-        } else {
-          const inp = document.createElement('input'); inp.type = 'file'; inp.webkitdirectory = true; inp.multiple = true;
-          await new Promise(ok => { inp.onchange = ok; inp.click(); });
-          if (!inp.files.length) return;
-          fromFileList(inp.files);
-        }
-        setBtn(); render();
-      } catch (e) { if (e && e.name !== 'AbortError') alert('Impossible de lire le dossier : ' + e.message); setBtn(); }
-    }
-    async function restore() {
-      if (!('showDirectoryPicker' in window)) return;
-      try {
-        root = await idb('readonly', st => st.get('root'));
-        if (!root) return;
-        if (await root.queryPermission({ mode: 'read' }) === 'granted') { await walk(root); render(); }
-        else state = 'permission';
-      } catch (e) { root = null; }
-      setBtn();
-    }
-    function setBtn(t) {
-      const b = document.getElementById('localbtn'); if (!b) return;
-      b.hidden = !supported;
-      const lbl = b.querySelector('span');
-      if (t) { lbl.textContent = t; return; }
-      b.classList.toggle('on', state === 'ready');
-      lbl.textContent = state === 'ready' ? 'Fichiers locaux activés' : state === 'permission' ? 'Reconnecter les fichiers locaux' : 'Fichiers locaux';
-      b.title = state === 'ready' ? `${eps.size} épisodes et ${nFiles.toLocaleString('fr')} fichiers audio trouvés sur cet ordinateur. Cliquez pour choisir un autre dossier.` : 'Écouter les mixes et les morceaux depuis votre dossier (ex. D:\\LA FABROCK). Les fichiers restent sur cet ordinateur.';
-    }
-    const forShow = s => (state === 'ready' && s && s.season != null) ? eps.get(epKey(s.season, s.episode)) || null : null;
-    function trackFile(s, t) {
-      const e = forShow(s); if (!e || !e.tracks.length) return null;
-      const exact = e.tracks.find(x => x.key === t.key);
-      if (exact) return exact;
-      const pos = s.items.filter(x => x.type === 'track').indexOf(t) + 1;
-      const nt = norm(t.title);
-      return e.tracks.find(x => x.nt && nt && (x.nt === nt || (x.n === pos && (x.nt.slice(0, 6) === nt.slice(0, 6))))) || null;
-    }
-    return { connect, restore, setBtn, forShow, trackFile, get ready() { return state === 'ready'; }, get supported() { return supported; } };
-  })();
-  const localSources = s => { const e = Local.forShow(s); return e ? e.mixes.map(m => ({ site: 'Local', label: m.name, get: m.get })) : []; };
-  const sources = s => [...localSources(s).slice(0, 1), ...s.links.filter(l => l.site === 'Mixcloud' || (l.site === 'hearthis' && l.stream))];
+  const sources = s => [...s.links.filter(l => l.site === 'Mixcloud' || (l.site === 'hearthis' && l.stream))];
   const playable = s => sources(s).length > 0;
   const hasTs = s => s.items.some(t => tsSec(t.ts) != null);
   const jumpable = (s, t) => playable(s) && tsSec(t.ts) != null && !(t.pos === 1 && tsSec(t.ts) === 0 && !s.items.some(x => tsSec(x.ts) > 0));
@@ -310,7 +197,7 @@
             <div class="eyebrow">En lecture<span id="pl-now"></span></div>
             <a class="pl-name" href="#/show/${show.slug}">${esc(show.name)}</a>
           </div>
-          <div class="pl-src" role="group" aria-label="Source">${srcs.map(l => `<button data-src="${esc(l.site)}" class="${l.site === (src && src.site) ? 'on' : ''}" ${l.label ? `title="${esc(l.label)}"` : ''}>${l.site === 'Local' ? 'Cet ordinateur' : esc(l.site)}</button>`).join('')}</div>
+          <div class="pl-src" role="group" aria-label="Source">${srcs.map(l => `<button data-src="${esc(l.site)}" class="${l.site === (src && src.site) ? 'on' : ''}" ${l.label ? `title="${esc(l.label)}"` : ''}>${esc(l.site)}</button>`).join('')}</div>
           <div class="pl-slot" id="pl-slot"></div>
           <button class="pl-close" aria-label="Fermer le lecteur" title="Fermer">×</button>
         </div>
@@ -328,13 +215,13 @@
     }
     function stop() {
       clearInterval(timer); timer = null;
-      if (audio) { audio.pause(); if (audio.dataset.blob) URL.revokeObjectURL(audio.src); audio.src = ''; audio = null; }
+      if (audio) { audio.pause(); audio.src = ''; audio = null; }
       widget = null;
     }
     function close() { stop(); show = src = null; bar.hidden = true; bar.innerHTML = ''; document.body.classList.remove('has-player'); markShow(); }
     function track(pos) {
       // highlight the song currently playing on the show page
-      if (!show || (src && src.site === 'Song')) return;
+      if (!show) return;
       const rows = [...document.querySelectorAll('#app tr[data-sec]')].filter(r => r.dataset.sec !== '');
       if (!rows.length || location.hash.split('?')[0] !== '#/show/' + show.slug) return;
       let cur = null;
@@ -354,12 +241,9 @@
       bar.hidden = false; document.body.classList.add('has-player');
       chrome();
       const slot = document.getElementById('pl-slot');
-      if (src.site === 'hearthis' || src.site === 'Local') {
+      if (src.site === 'hearthis') {
         audio = new Audio(); audio.controls = true; audio.preload = 'auto';
-        if (src.site === 'Local') {
-          try { const f = await src.get(); audio.src = URL.createObjectURL(f); audio.dataset.blob = 1; msg('Lecture de ' + src.label + ' depuis cet ordinateur.'); }
-          catch (e) { msg('Impossible d\'ouvrir le fichier local. Reconnectez le dossier avec le bouton Fichiers locaux.'); return; }
-        } else audio.src = src.stream;
+        audio.src = src.stream;
         slot.appendChild(audio);
         const go = () => { if (sec) audio.currentTime = sec; };
         audio.addEventListener('loadedmetadata', go, { once: true });
@@ -420,20 +304,7 @@
       } catch (e) { msg('Impossible d\'aller à ce moment.'); }
     }
     function markShow() { if (show) track(audio ? audio.currentTime : 0); }
-    async function playFile(s, f, label) {
-      // a single song from the xprt folder
-      stop(); show = s; src = { site: 'Song', label };
-      bar.hidden = false; document.body.classList.add('has-player');
-      chrome();
-      bar.querySelector('.pl-src').innerHTML = '<button class="on">Morceau local</button>';
-      document.getElementById('pl-now').textContent = ' · ' + label;
-      audio = new Audio(); audio.controls = true;
-      try { audio.src = URL.createObjectURL(await f.get()); audio.dataset.blob = 1; } catch (e) { msg('Impossible d\'ouvrir le fichier local. Reconnectez le dossier avec le bouton Fichiers locaux.'); return; }
-      document.getElementById('pl-slot').appendChild(audio);
-      audio.play().catch(() => msg('Appuyez sur lecture pour démarrer.'));
-      msg('Depuis ' + f.name);
-    }
-    return { open, seek, close, markShow, playFile };
+    return { open, seek, close, markShow };
   })();
 
   // ---------- views ----------
@@ -499,28 +370,6 @@
       <span class="badge ${g.count > 1 ? 'hot' : ''}" title="Nombre de passages">${g.count}×</span></a></li>`;
   }
 
-  function bindSongLocal() {
-    app.querySelectorAll('[data-lshow]').forEach(b => b.onclick = () => {
-      const s = DB.showById.get(+b.dataset.lshow), t = s.items.find(x => x.pos === +b.dataset.lpos), f = Local.trackFile(s, t);
-      if (f) Player.playFile(s, f, label(t));
-    });
-  }
-  function localBlock(s) {
-    const e = Local.forShow(s);
-    if (!e) return Local.supported && s.season != null && !Local.ready ? `<p class="small local-hint">Sur votre ordinateur ? Utilisez <b>Fichiers locaux</b> en haut pour écouter cet épisode depuis votre dossier.</p>` : '';
-    const n = s.items.filter(t => t.type === 'track' && Local.trackFile(s, t)).length;
-    return `<div class="localbox"><div><b>Sur cet ordinateur</b> <span class="small">dossier ${esc(e.folder)} · ${plural(e.mixes.length, 'fichier mix', 'fichiers mix')}${e.tracks.length ? ` · ${n} titres sur ${s.nTracks} retrouvés dans le dossier xprt` : ''}</span></div>
-      <div class="btns">${e.mixes.map((m, i) => `<button class="btn ${i ? 'ghost' : ''}" data-lmix="${i}">▶ ${esc(m.name)}${m.size ? ` <span class="small">${Math.round(m.size / 1048576)} MB</span>` : ''}</button>`).join('')}</div></div>`;
-  }
-  function localTrackBtn(s, t) {
-    const f = Local.trackFile(s, t);
-    return f ? `<button class="lt" data-lpos="${t.pos}" title="Écouter le fichier : ${esc(f.name)}">♪ fichier</button>` : '';
-  }
-  function bindLocal(s) {
-    const e = Local.forShow(s); if (!e) return;
-    app.querySelectorAll('[data-lmix]').forEach(b => b.onclick = () => { const m = e.mixes[+b.dataset.lmix]; Player.open(s, 0, { site: 'Local', label: m.name, get: m.get }); });
-    app.querySelectorAll('.tracks [data-lpos]').forEach(b => b.onclick = () => { const t = s.items.find(x => x.pos === +b.dataset.lpos); const f = Local.trackFile(s, t); if (f) Player.playFile(s, f, label(t)); });
-  }
 
   function viewSong(key) {
     const g = DB.songs.get(key);
@@ -551,9 +400,8 @@
               <span>Après</span>${p.next ? `<a href="#/song/${encodeURIComponent(p.next.key)}">${esc(label(p.next))}</a>` : '<em class="small">Dernier morceau</em>'}
             </div>
           </div>
-          ${p.show.links.length || Local.trackFile(p.show, p) ? `<div class="listen-col">${Local.trackFile(p.show, p) ? `<button class="listen lt" data-lshow="${p.show.id}" data-lpos="${p.pos}">▶ Fichier local</button>` : ''}${p.show.links.map(l => `<a class="listen" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.site)} ↗</a>`).join('')}</div>` : '<span></span>'}
+          ${p.show.links.length ? `<div class="listen-col">${p.show.links.map(l => `<a class="listen" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.site)} ↗</a>`).join('')}</div>` : '<span></span>'}
         </div>`).join('')}</div>`;
-    bindSongLocal();
     scrollTo(0, 0);
   }
 
@@ -620,14 +468,13 @@
       ${s.tags.length ? `<div class="tags">${s.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
       ${commentsBlock(s)}
       ${spotifyKit(s)}
-      ${localBlock(s)}
       ${playable(s) ? `<div class="listen-here"><button class="btn" data-play="0">▶ Écouter l'émission ici</button>${hasTs(s) ? `<span class="small">Cliquez sur un titre pour y aller directement dans le mix.</span>` : `<span class="small">Pas de minutage dans cette tracklist : impossible d'aller directement à un titre.</span>`}</div>` : ''}
       <div class="sec-head"><h2>Tracklist</h2><span class="count">× = nombre de passages du titre dans toutes les émissions</span></div>
       ${s.items.length ? `<table class="tracks"><thead><tr><th>#</th><th class="time">Temps</th><th>Titre</th><th class="r">Passages</th></tr></thead><tbody>
         ${s.items.map(t => t.type === 'track'
           ? `<tr data-sec="${tsSec(t.ts) ?? ''}"><td class="num">${++n}</td><td class="time">${jumpable(s, t) ? `<button class="jump" data-play="${tsSec(t.ts)}" aria-label="Écouter à partir de ${esc(t.ts)}">▶ ${esc(t.ts)}</button>` : esc(t.ts)}</td>
               <td>${jumpable(s, t) ? `<button class="songjump" data-play="${tsSec(t.ts)}" title="Écouter à partir de ${esc(t.ts)}">` : `<a href="#/song/${encodeURIComponent(t.key)}">`}<span class="tt">${esc(t.title)}</span><br><span class="ta">${esc(t.artist)}</span>${jumpable(s, t) ? '</button>' : '</a>'}</td>
-              <td class="r">${localTrackBtn(s, t)}<a class="badge ${t.song.count > 1 ? 'hot' : ''}" href="#/song/${encodeURIComponent(t.key)}" title="${t.counted ? 'Nombre de passages : voir chaque passage' : 'Déjà compté dans l\'émission originale'}">${t.song.count}×</a></td></tr>`
+              <td class="r"><a class="badge ${t.song.count > 1 ? 'hot' : ''}" href="#/song/${encodeURIComponent(t.key)}" title="${t.counted ? 'Nombre de passages : voir chaque passage' : 'Déjà compté dans l\'émission originale'}">${t.song.count}×</a></td></tr>`
           : `<tr class="seg" data-sec="${tsSec(t.ts) ?? ''}"><td class="num"></td><td class="time">${jumpable(s, t) ? `<button class="jump" data-play="${tsSec(t.ts)}">▶ ${esc(t.ts)}</button>` : esc(t.ts)}</td><td colspan="2">${esc(t.title)}</td></tr>`).join('')}
         </tbody></table>` : `<div class="empty"><b>Pas de tracklist</b>${s.version_of ? 'Cette version n\'a pas de tracklist propre. Voir l\'émission originale plus haut.' : 'La liste des morceaux de cette émission n\'est pas disponible.'}</div>`}
       <div class="sec-head">
@@ -635,7 +482,6 @@
         ${next ? `<a class="back" href="#/show/${next.slug}">${esc(next.name.slice(0, 48))} →</a>` : ''}
       </div>`;
     app.querySelectorAll('[data-play]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); Player.open(s, +b.dataset.play || 0); }));
-    bindLocal(s);
     bindKit(s);
     Player.markShow();
     const tp = params && params.get('t'); const t0 = tp && /^\d+$/.test(tp) ? +tp : tsSec(tp || '');
@@ -1175,8 +1021,6 @@
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(raw => {
       DB = build(raw);
-      Local.setBtn(); Local.restore();
-      document.getElementById('localbtn').onclick = () => Local.connect();
       document.getElementById('foot').innerHTML = `Données mises à jour le ${fmtDate(raw.updated)} · ${plural(DB.shows.length, 'émission')} · Tracklists issues de Mixcloud et hearthis · <a href="show/">Liste de toutes les émissions</a>`;
       render();
     })
