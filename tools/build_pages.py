@@ -100,7 +100,7 @@ HEAD = '''<!doctype html>
       <span class="brand-text"><strong>La fabrock</strong><span>Les archives</span></span>
     </a>
     <nav class="tabs" aria-label="Rubriques">
-      <a href="{rel}#/home">Accueil</a><a href="{rel}#/seasons">Saisons</a><a href="{rel}#/shows" class="on">Émissions</a><a href="{rel}#/songs">Titres</a><a href="{rel}#/artists">Artistes</a>
+      <a href="{rel}#/home">Accueil</a><a href="{rel}#/seasons">Saisons</a><a href="{rel}#/shows" class="on">Émissions</a><a href="{rel}#/songs">Titres</a><a href="{rel}#/artists">Artistes</a><a href="{rel}playlists/">Playlists</a>
     </nav>
   </div>
 </header>
@@ -190,6 +190,30 @@ def index_page(shows):
     return h + f'<section class="hero"><h1>Toutes les émissions</h1><p>{len(shows)} émissions, de la plus récente à la plus ancienne. Pour chercher un titre ou un artiste, passez par <a href="../#/songs">les archives interactives</a>.</p></section>\n<ul class="list">\n{rows}</ul>\n' + FOOT.format(rel='../')
 
 
+def playlists_page():
+    """playlists/index.html : the themed YouTube playlists of the channel (data/youtube.json, "themes")."""
+    themes = json.load(open(os.path.join(ROOT, 'data', 'youtube.json'), encoding='utf-8')).get('themes', [])
+    themes = [t for t in themes if t.get('url', '').startswith('https://www.youtube.com/')]
+    h = HEAD.format(title="Playlists thématiques — La fabrock", desc=e("Les playlists YouTube de La fabrock : les meilleurs titres de l'année par genre, les clips, les samples."),
+                    url=e(SITE + 'playlists/'), ogtype='website', ogtitle='Les playlists thématiques de La fabrock', rel='../',
+                    card='summary', image='', jsonld='').replace(' class="on">Émissions', '>Émissions').replace('playlists/">Playlists', 'playlists/" class="on">Playlists')
+    groups = []
+    for t in themes:
+        if t['group'] not in groups:
+            groups.append(t['group'])
+    body = ''
+    for g in groups:
+        rows = ''.join(f'<li><a class="row show-row" href="{e(t["url"])}" target="_blank" rel="noopener"><span class="d">▶</span>'
+                       f'<div><div class="n">{e(t["title"])}</div><div class="small">Playlist YouTube ↗</div></div>'
+                       f'<span class="badge">{e(str(t["videos"])) + " vidéo" + ("s" if t["videos"] > 1 else "") if t.get("videos") else "—"}</span></a></li>\n'
+                       for t in themes if t['group'] == g)
+        body += f'<div class="sec-head"><h2>{e(g)}</h2><span class="count">{sum(t["group"] == g for t in themes)}</span></div>\n<ul class="list">\n{rows}</ul>\n'
+    n = sum(t.get('videos') or 0 for t in themes)
+    return h + (f'<section class="hero"><h1>Playlists thématiques</h1><p>{len(themes)} playlists et plus de {n // 100 * 100} vidéos sur la chaîne '
+                f'<a href="https://www.youtube.com/@lafabrock" target="_blank" rel="noopener">YouTube de La fabrock</a> : le meilleur de chaque année par genre, '
+                f'les clips, les samples. Les playlists liées à une émission sont sur la page de l\'émission.</p></section>\n') + body + FOOT.format(rel='../')
+
+
 def og_block(latest):
     img = cover(latest)
     tags = [
@@ -228,8 +252,9 @@ def main():
         write(os.path.join(out_dir, s['slug'], 'index.html'),
               page(s, shows[i - 1] if i else None, shows[i + 1] if i + 1 < len(shows) else None, by_id))
     write(os.path.join(out_dir, 'index.html'), index_page(shows))
+    write(os.path.join(ROOT, 'playlists', 'index.html'), playlists_page())
 
-    urls = [(SITE, d['updated']), (SITE + 'show/', d['updated'])] + [(SITE + 'show/' + s['slug'] + '/', s['date']) for s in shows]
+    urls = [(SITE, d['updated']), (SITE + 'show/', d['updated']), (SITE + 'playlists/', d['updated'])] + [(SITE + 'show/' + s['slug'] + '/', s['date']) for s in shows]
     write(os.path.join(ROOT, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
           + ''.join(f'<url><loc>{e(u)}</loc><lastmod>{m}</lastmod></url>\n' for u, m in urls) + '</urlset>\n')
 
