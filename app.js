@@ -598,7 +598,7 @@
         <div class="eyebrow">${epCode(s) || esc(cat(s.category))}</div>
         <div class="card-t">${esc(shortName(s))}</div>
         <div class="small">${fmtDate(s.day)} · ${plural(s.nTracks, 'morceau', 'morceaux')}</div>
-        <div class="card-p">${s.links.map(l => `<span class="ptag ${l.site === 'hearthis' ? 'ht' : ''}">${esc(l.site)}</span>`).join('')}</div>
+        <div class="card-p">${s.links.map(l => `<span class="ptag ${l.site === 'hearthis' ? 'ht' : ''}">${esc(l.site)}</span>`).join('')}${s.spotify ? '<span class="ptag">Spotify</span>' : ''}</div>
       </div></a>`;
   }
   function viewHome() {
@@ -689,7 +689,7 @@
             <div class="small">${fmtDate(m.day)}${m.duration ? ` · ${e.main.reduce((k, s) => k + (s.duration || 0), 0)} min` : ''} · ${plural(allTracks, 'morceau', 'morceaux')}${e.main.length > 1 ? ` · ${e.main.length} parties` : ''}</div>
             ${others.length ? `<div class="ep-v">${others.map(s => `<a href="#/show/${s.slug}">${s.version_of ? 'Version alt.' : s.counted ? 'Partie' : 'Music Only'}: ${esc(shortName(s).slice(0, 50))}</a>`).join('')}</div>` : ''}
           </div>
-          <div class="ep-l">${[...new Map(e.main.flatMap(s => s.links).map(l => [l.site, l])).values()].map(l => `<span class="ptag ${l.site === 'hearthis' ? 'ht' : ''}">${esc(l.site)}</span>`).join('')}</div>
+          <div class="ep-l">${[...new Set(e.main.flatMap(s => s.links.map(l => l.site).concat(s.spotify ? ['Spotify'] : [])))].map(site => `<span class="ptag ${site === 'hearthis' ? 'ht' : ''}">${esc(site)}</span>`).join('')}</div>
         </li>`;
       }).join('')}</ul>
       <div class="sec-head">
