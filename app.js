@@ -459,7 +459,7 @@
             <span>Tracklist : ${esc(srcLabel(s.source))}</span>
             <a class="share-link" href="show/${esc(s.slug)}/" title="Page avec la pochette et la tracklist, à partager sur les réseaux">Page à partager ↗</a>
           </div>
-          <div class="btns">${s.links.map((l, i) => `<a class="btn ${i ? 'ghost' : ''}" href="${esc(l.url)}" target="_blank" rel="noopener">Écouter sur ${esc(l.site)} ↗</a>`).join('')}${s.spotify ? `<a class="btn ghost" href="${esc(s.spotify)}" target="_blank" rel="noopener">Écouter sur Spotify ↗</a>` : ''}</div>
+          <div class="btns">${s.links.map((l, i) => `<a class="btn ${i ? 'ghost' : ''}" href="${esc(l.url)}" target="_blank" rel="noopener">${l.site === 'Playlist YouTube' ? 'Les morceaux en playlist YouTube' : 'Écouter sur ' + esc(l.site)} ↗</a>`).join('')}${s.spotify ? `<a class="btn ghost" href="${esc(s.spotify)}" target="_blank" rel="noopener">Écouter sur Spotify ↗</a>` : ''}</div>
         </div>
       </div>
       ${episodeNav(s)}
@@ -616,7 +616,7 @@
           <h1>${esc(shortName(latest))}</h1>
           <div class="facts">${latest.season ? `<a href="#/season/${latest.season}">Saison ${latest.season}, épisode ${latest.episode}</a>` : `<span>${esc(cat(latest.category))}</span>`}${latest.duration ? `<span>${latest.duration} min</span>` : ''}<span>${plural(latest.nTracks, 'morceau', 'morceaux')}</span></div>
           ${desc ? `<div class="feature-desc">${esc(desc)}</div>` : ''}
-          <div class="btns">${latest.links.map((l, i) => `<a class="btn ${i ? 'ghost' : ''}" href="${esc(l.url)}" target="_blank" rel="noopener">Écouter sur ${esc(l.site)} ↗</a>`).join('')}${latest.spotify ? `<a class="btn ghost" href="${esc(latest.spotify)}" target="_blank" rel="noopener">Écouter sur Spotify ↗</a>` : ''}<a class="btn ghost" href="#/show/${latest.slug}">Toute la tracklist</a></div>
+          <div class="btns">${latest.links.map((l, i) => `<a class="btn ${i ? 'ghost' : ''}" href="${esc(l.url)}" target="_blank" rel="noopener">${l.site === 'Playlist YouTube' ? 'Les morceaux en playlist YouTube' : 'Écouter sur ' + esc(l.site)} ↗</a>`).join('')}${latest.spotify ? `<a class="btn ghost" href="${esc(latest.spotify)}" target="_blank" rel="noopener">Écouter sur Spotify ↗</a>` : ''}<a class="btn ghost" href="#/show/${latest.slug}">Toute la tracklist</a></div>
         </div>
         ${tl.length ? `<ol class="feature-tl">${tl.slice(0, 8).map(t => `<li><a href="#/song/${encodeURIComponent(t.key)}"><span class="tt">${esc(t.title)}</span> <span class="ta">${esc(t.artist)}</span></a></li>`).join('')}${tl.length > 8 ? `<li class="more-li"><a href="#/show/${latest.slug}">+ ${tl.length - 8} autres</a></li>` : ''}</ol>` : ''}
       </section>

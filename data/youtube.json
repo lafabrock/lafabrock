@@ -1,7 +1,37 @@
 {
- "_comment": "Vidéos YouTube des émissions (versions mix exportées de DJ Studio), par identifiant d'émission. Les nouvelles vidéos de la chaîne dont le titre contient le code de l'épisode (s14e06, ou 1406 avec « fabrock ») sont ajoutées automatiquement chaque samedi. On peut aussi ajouter une ligne à la main.",
+ "_comment": "Vidéos YouTube des émissions (versions mix exportées de DJ Studio), par identifiant d'émission. Les nouvelles vidéos de la chaîne dont le titre contient le code de l'épisode (s14e06, ou 1406 avec « fabrock ») sont ajoutées automatiquement chaque samedi. On peut aussi ajouter une ligne à la main. « playlists » : la playlist YouTube des morceaux de l'émission (bouton « Playlist YouTube »).",
  "channel_id": "UCd1uDHHQK28yFZn4ImBNW4w",
  "videos": {
-  "s14e05": "https://www.youtube.com/watch?v=ojN5DAmTblM"
+  "s14e05": "https://www.youtube.com/watch?v=ojN5DAmTblM",
+  "the-black-lips-interview-by-la-fabrock-may-2016-le-cargo": "https://www.youtube.com/watch?v=eXs5cXNpY98"
+ },
+ "playlists": {
+  "s03e12": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8dq3MKBDxeiCwhL4HgF0jwM",
+  "s03e19": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8cW5YJhBFt0A4vot2Kiz156",
+  "s03e21": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8cnZmNOKjS_b1lNspGt5oFB",
+  "s03e24": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8cbhBiLtkpIsjtdc18u-hVB",
+  "s03e25": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8elbGb35KW6TB2ZDdKnfhAX",
+  "s03e26": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8ekeag5g0YGCrZrmz2dEiAh",
+  "s03e28": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8fuvWlVFng0REwZhD3vMZ6z",
+  "s04e07": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8dix-zH0Z5zvhhvPZDGSotF",
+  "s04e10": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8eX4_mGG33vuGmHfhUXg_Ag",
+  "s04e11": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8eBHDQsqZ83IPDWmglhTadc",
+  "s04e14": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8eZ2kTztL6sAh-Vs_CQ6jYg",
+  "s04e19": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8dIxnyCO2Unxp_ZC6MFYhJj",
+  "s04e20": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8dTLOubj7g-g71yNBKnHWla",
+  "s05e10": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8ecWDs-wbOM-touDHQC91l2",
+  "s09e09": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8cyFwQOXCFU4ceGT9S-dDn0",
+  "human-a-day-in-the-hi-life": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8d0VXHz_JaygFRRmDJ8TkL2",
+  "topspin-16-ubiquitous-musical-ping-pong-with-me-and-the": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8cyw9KAyW8f6hg0JkNirqDF",
+  "l7-a-7th-birthday-mixtape-for-liam-to-take-on-the-universe": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8dfgBkl3rUxHeU5Ea8s0BzR",
+  "funky-explorations-03-funky-corners": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8eLQT6LvoLksH0VQOER9obN",
+  "ttta-best-of-2024-a-ap-rocky-charli-xcx-peggy-gou-caribou": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8edTTo_dXmSnTdw9Q8L4XED",
+  "selection-2017-a-best-music-of-2017-by-les-tontons": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8f5KB_T9_H4egFHOqhgUzE-",
+  "selection-2017-b-best-music-of-2017-by-les-tontons": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8f5KB_T9_H4egFHOqhgUzE-",
+  "best-of-2018-so-far-by-les-tontons-transistors-a-parliament": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8e0mTrJMhBsn_JHmKMeraGi",
+  "best-of-2018-so-far-by-les-tontons-transistors-b-altin-gun": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8e0mTrJMhBsn_JHmKMeraGi",
+  "best-of-2018-2nd-half-by-les-tontons-transistors-a-louis": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8cUJn_TDcWjSRfsKJLh3NK3",
+  "best-of-2018-2nd-half-by-les-tontons-transistors-b": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8cUJn_TDcWjSRfsKJLh3NK3",
+  "best-of-2018-2nd-half-by-les-tontons-transistors-c": "https://www.youtube.com/playlist?list=PLBDE0FM5mr8cUJn_TDcWjSRfsKJLh3NK3"
  }
 }

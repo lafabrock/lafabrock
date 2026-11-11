@@ -1,4 +1,5 @@
-"""YouTube videos of La fabrock (the mix-only versions exported from DJ Studio).
+"""YouTube videos and playlists of La fabrock (mix-only versions exported from DJ Studio,
+playlists of the tracks of a show: "playlists": {"s03e12": "https://www.youtube.com/playlist?list=…"}).
 
 data/youtube.json keeps, for each show identifier, the address of its video:
     "videos": {"s14e05": "https://www.youtube.com/watch?v=ojN5DAmTblM"}
@@ -69,10 +70,13 @@ def fetch(session=None):
 
 
 def apply(shows):
-    videos = {k: v for k, v in load().get('videos', {}).items() if v.startswith('https://')}
+    reg = load()
+    ok = lambda d: {k: v for k, v in d.items() if isinstance(v, str) and v.startswith('https://')}
+    videos, playlists = ok(reg.get('videos', {})), ok(reg.get('playlists', {}))
     for s in shows:
-        url = videos.get(s.get('slug'))
         links = s.setdefault('links', [])
-        links[:] = [l for l in links if l.get('site') != 'YouTube']
-        if url:
-            links.append({'site': 'YouTube', 'url': url})
+        links[:] = [l for l in links if l.get('site') not in ('YouTube', 'Playlist YouTube')]
+        if videos.get(s.get('slug')):
+            links.append({'site': 'YouTube', 'url': videos[s['slug']]})
+        if playlists.get(s.get('slug')):
+            links.append({'site': 'Playlist YouTube', 'url': playlists[s['slug']]})

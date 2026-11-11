@@ -148,7 +148,7 @@ def page(s, prev, nxt, by_id):
         facts.append(f"{s['duration']} min")
     facts.append(f"{len(tl)} morceau{'x' if len(tl) > 1 else ''}")
     btns = [f'<a class="btn" href="{e(app)}">▶ Écouter et explorer dans l\'archive</a>']
-    btns += [f'<a class="btn ghost" href="{e(l["url"])}" target="_blank" rel="noopener">Écouter sur {e(l["site"])} ↗</a>' for l in links(s)]
+    btns += [f'<a class="btn ghost" href="{e(l["url"])}" target="_blank" rel="noopener">{"Les morceaux en playlist YouTube" if l["site"] == "Playlist YouTube" else "Écouter sur " + e(l["site"])} ↗</a>' for l in links(s)]
     out = [h, '<a class="back" href="../../#/shows">← Toutes les émissions</a>\n',
            f'<div class="detail-head {"" if img else "nocover"}">',
            f'<img class="cover" src="{e(cover(s, 600))}" alt="Pochette" width="160" height="160" onerror="this.remove();this.parentElement.classList.add(\'nocover\')">' if img else '',
