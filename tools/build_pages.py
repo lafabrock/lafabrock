@@ -100,8 +100,11 @@ HEAD = '''<!doctype html>
       <span class="brand-text"><strong>La fabrock</strong><span>Les archives</span></span>
     </a>
     <nav class="tabs" aria-label="Rubriques">
-      <a href="{rel}#/home">Accueil</a><a href="{rel}#/seasons">Saisons</a><a href="{rel}#/shows" class="on">Émissions</a><a href="{rel}#/songs">Titres</a><a href="{rel}#/artists">Artistes</a><a href="{rel}playlists/">Playlists</a>
+      <a href="{rel}#/home">Accueil</a><a href="{rel}#/seasons">Saisons</a><a href="{rel}#/shows" class="on">Émissions</a><a href="{rel}#/songs">Titres</a><a href="{rel}#/artists">Artistes</a><a href="{rel}playlists/">Playlists</a><a href="{rel}#/random">Au hasard</a>
     </nav>
+    <button class="theme" id="theme" aria-label="Basculer entre thème clair et sombre" title="Changer de thème" onclick="var r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';try{{localStorage.setItem('theme',r.dataset.theme)}}catch(e){{}}">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
   </div>
 </header>
 <main class="wrap">
@@ -151,7 +154,7 @@ def page(s, prev, nxt, by_id):
     btns += [f'<a class="btn ghost" href="{e(l["url"])}" target="_blank" rel="noopener">{"Les morceaux en playlist YouTube" if l["site"] == "Playlist YouTube" else "Écouter sur " + e(l["site"])} ↗</a>' for l in links(s)]
     out = [h, '<a class="back" href="../../#/shows">← Toutes les émissions</a>\n',
            f'<div class="detail-head {"" if img else "nocover"}">',
-           f'<img class="cover" src="{e(cover(s, 600))}" alt="Pochette" width="160" height="160" onerror="this.remove();this.parentElement.classList.add(\'nocover\')">' if img else '',
+           f'<img class="cover" src="{e(cover(s, 600))}" alt="Pochette" width="160" height="160" onerror="this.parentElement.classList.add(\'nocover\');this.remove()">' if img else '',
            f'<div><div class="eyebrow">{e(eyebrow)}</div><h1>{e(s["name"])}</h1>',
            '<div class="facts">' + ''.join(f'<span>{e(f)}</span>' for f in facts) + '</div>',
            '<div class="btns">' + ''.join(btns) + '</div></div></div>\n']
