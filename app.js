@@ -137,7 +137,7 @@
   function setTab(name) {
     document.querySelectorAll('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === name));
   }
-  const HOME_TITLE = "La fabrock — l'archive de l'émission de Radio 666";
+  const HOME_TITLE = "La fabrock — les archives de l'émission de Radio 666";
   function render() {
     if (!DB) return;
     const { parts, params } = parse();
@@ -344,7 +344,7 @@
         title = list.length ? `${plural(list.length, 'titre')} pour « ${esc(input.value.trim())} »` : '';
       }
       if (q && !list.length) {
-        res.innerHTML = `<div class="empty"><b>Jamais passé</b>Rien dans l'archive ne correspond à « ${esc(input.value.trim())} ».</div>`;
+        res.innerHTML = `<div class="empty"><b>Jamais passé</b>Rien dans les archives ne correspond à « ${esc(input.value.trim())} ».</div>`;
         return;
       }
       const shown = list.slice(0, limit);
@@ -373,7 +373,7 @@
 
   function viewSong(key) {
     const g = DB.songs.get(key);
-    if (!g) return notFound('Ce titre n\'est pas dans l\'archive.');
+    if (!g) return notFound('Ce titre n\'est pas dans les archives.');
     const plays = [...g.plays].sort((a, b) => b.show.date.localeCompare(a.show.date));
     const ak = akey(g.artist);
     app.innerHTML = `
@@ -439,7 +439,7 @@
 
   function viewShow(slug, params, opts) {
     const s = DB.showBySlug.get(slug);
-    if (!s) return notFound('Cette émission n\'est pas dans l\'archive.');
+    if (!s) return notFound('Cette émission n\'est pas dans les archives.');
     const idx = DB.shows.indexOf(s);
     const prev = DB.shows[idx - 1], next = DB.shows[idx + 1];
     let n = 0;
@@ -663,7 +663,7 @@
   }
   function viewSeason(n) {
     const se = DB.seasons.get(n);
-    if (!se) return notFound('Cette saison n\'est pas dans l\'archive.');
+    if (!se) return notFound('Cette saison n\'est pas dans les archives.');
     const nums = [...DB.seasons.keys()].sort((a, b) => a - b);
     const i = nums.indexOf(n), prev = nums[i - 1], next = nums[i + 1];
     const missing = [];
@@ -676,7 +676,7 @@
         <div class="eyebrow">Saison ${n} · ${seasonYears(se)}</div>
         <h1>Saison ${n}</h1>
         <div class="facts"><span>${plural(se.episodes.length, 'épisode')}</span>${se.live ? `<span>${se.live} en direct</span>` : ''}<span>${se.tracks.toLocaleString('fr')} morceaux</span><span>${fmtDate(se.first)} → ${fmtDate(se.last)}</span></div>
-        ${missing.length ? `<p class="small">Absent${missing.length > 1 ? 's' : ''} de l'archive : épisode${missing.length > 1 ? 's' : ''} ${missing.join(', ')}.</p>` : ''}
+        ${missing.length ? `<p class="small">Absent${missing.length > 1 ? 's' : ''} des archives : épisode${missing.length > 1 ? 's' : ''} ${missing.join(', ')}.</p>` : ''}
       </div></div>
       <ul class="list">${se.episodes.map(e => {
         const m = e.main[0];
@@ -731,7 +731,7 @@
       }
     };
     el.innerHTML = `<div class="discover">
-      ${panel('Au hasard', 'Un titre de l\'archive, tiré au sort', '<div id="p-rand"></div>', shuffleBtn('rand'))}
+      ${panel('Au hasard', 'Un titre des archives, tiré au sort', '<div id="p-rand"></div>', shuffleBtn('rand'))}
       ${panel('Passés récemment', `Dans les ${recentShows.length} dernières émissions`, `<ol class="mini">${recent.slice(0, 7).map(r => `<li>${songLink(r.g)}<a class="small" href="#/show/${r.s.slug}">${epCode(r.s) || fmtDate(r.s.day)}</a></li>`).join('')}</ol>`)}
       ${panel('Passés une seule fois', `${once.length.toLocaleString('fr')} titres passés une seule fois, il y a au moins 3 ans`, '<div id="p-once"></div>', shuffleBtn('once'))}
       ${panel('Le plus long retour', 'Des titres revenus après des années', `<ol class="mini">${gaps.slice(0, 7).map(g => `<li>${songLink(g)}<span class="small">${Math.round(g.gap / 365.25)} ans</span></li>`).join('')}</ol>`)}
@@ -954,7 +954,7 @@
   function viewArtist(key) {
     const a = DB.artists.get(key);
     const songs = [...DB.songs.values()].filter(g => akey(g.artist) === key).sort((x, y) => y.count - x.count || x.title.localeCompare(y.title));
-    if (!songs.length) return notFound('Cet artiste n\'est pas dans l\'archive.');
+    if (!songs.length) return notFound('Cet artiste n\'est pas dans les archives.');
     const name = a ? a.name : songs[0].artist;
     app.innerHTML = `
       <a class="back" href="#/artists">← Tous les artistes</a>

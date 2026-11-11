@@ -95,9 +95,9 @@ HEAD = '''<!doctype html>
 <body>
 <header class="top">
   <div class="wrap top-inner">
-    <a href="{rel}#/home" class="brand" aria-label="Accueil de l'archive La fabrock">
+    <a href="{rel}#/home" class="brand" aria-label="Accueil des archives La fabrock">
       <svg class="logo" viewBox="0 0 40 40" fill="none" aria-hidden="true"><circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="2"/><circle cx="20" cy="20" r="11" stroke="currentColor" stroke-width="1" opacity=".45"/><circle cx="20" cy="20" r="4.5" fill="var(--accent)"/><path d="M20 2v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <span class="brand-text"><strong>La fabrock</strong><span>L'archive</span></span>
+      <span class="brand-text"><strong>La fabrock</strong><span>Les archives</span></span>
     </a>
     <nav class="tabs" aria-label="Rubriques">
       <a href="{rel}#/home">Accueil</a><a href="{rel}#/seasons">Saisons</a><a href="{rel}#/shows" class="on">Émissions</a><a href="{rel}#/songs">Titres</a><a href="{rel}#/artists">Artistes</a>
@@ -107,7 +107,7 @@ HEAD = '''<!doctype html>
 <main class="wrap">
 '''
 FOOT = '''</main>
-<footer class="wrap foot">La fabrock, le grand mélange musical de Radio 666 · <a href="{rel}#/home">L'archive interactive</a> · <a href="{rel}show/">Toutes les émissions</a></footer>
+<footer class="wrap foot">La fabrock, le grand mélange musical de Radio 666 · <a href="{rel}#/home">Les archives interactives</a> · <a href="{rel}show/">Toutes les émissions</a></footer>
 </body>
 </html>
 '''
@@ -147,7 +147,7 @@ def page(s, prev, nxt, by_id):
     if s.get('duration'):
         facts.append(f"{s['duration']} min")
     facts.append(f"{len(tl)} morceau{'x' if len(tl) > 1 else ''}")
-    btns = [f'<a class="btn" href="{e(app)}">▶ Écouter et explorer dans l\'archive</a>']
+    btns = [f'<a class="btn" href="{e(app)}">▶ Écouter et explorer dans les archives</a>']
     btns += [f'<a class="btn ghost" href="{e(l["url"])}" target="_blank" rel="noopener">{"Les morceaux en playlist YouTube" if l["site"] == "Playlist YouTube" else "Écouter sur " + e(l["site"])} ↗</a>' for l in links(s)]
     out = [h, '<a class="back" href="../../#/shows">← Toutes les émissions</a>\n',
            f'<div class="detail-head {"" if img else "nocover"}">',
@@ -187,7 +187,7 @@ def index_page(shows):
     rows = ''.join(f'<li><a class="row show-row" href="{e(s["slug"])}/"><span class="d">{e((s.get("aired") or s["date"])[:4])}</span>'
                    f'<div><div class="n">{e(s["name"])}</div></div><span class="badge">{len(tracks(s)) or "—"}</span></a></li>\n'
                    for s in sorted(shows, key=lambda s: (s['date'], s['id']), reverse=True))
-    return h + f'<section class="hero"><h1>Toutes les émissions</h1><p>{len(shows)} émissions, de la plus récente à la plus ancienne. Pour chercher un titre ou un artiste, passez par <a href="../#/songs">l\'archive interactive</a>.</p></section>\n<ul class="list">\n{rows}</ul>\n' + FOOT.format(rel='../')
+    return h + f'<section class="hero"><h1>Toutes les émissions</h1><p>{len(shows)} émissions, de la plus récente à la plus ancienne. Pour chercher un titre ou un artiste, passez par <a href="../#/songs">les archives interactives</a>.</p></section>\n<ul class="list">\n{rows}</ul>\n' + FOOT.format(rel='../')
 
 
 def og_block(latest):
@@ -196,7 +196,7 @@ def og_block(latest):
         '<meta property="og:site_name" content="La fabrock">',
         '<meta property="og:locale" content="fr_FR">',
         '<meta property="og:type" content="website">',
-        '<meta property="og:title" content="La fabrock — l\'archive de l\'émission de Radio 666">',
+        '<meta property="og:title" content="La fabrock — les archives de l\'émission de Radio 666">',
         '<meta property="og:description" content="Toutes les tracklists de La fabrock depuis 2012 : cherchez un titre ou un artiste, réécoutez les émissions.">',
         f'<meta property="og:url" content="{SITE}">',
     ]
