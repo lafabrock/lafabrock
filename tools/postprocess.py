@@ -160,6 +160,8 @@ def finalize(shows, legacy=False):
     assign_slugs(shows, registry, legacy=legacy)
     assign_aired(shows, load('overrides.json', {}))
     save('slugs.json', registry)
+    from youtube import apply as add_youtube
+    add_youtube(shows)
 
 
 def main():

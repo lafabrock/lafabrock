@@ -224,6 +224,10 @@ def main():
             for p in s.get('version_of') or []:
                 by_id[p].setdefault('versions', []).append(s['id'])
     failed = [d['name'] for d in full if d['_failed']]
+    from youtube import fetch as fetch_youtube
+    n_yt = fetch_youtube(S)
+    if n_yt:
+        print(f'YouTube: {n_yt} new video(s) added to data/youtube.json')
     from postprocess import finalize
     finalize(shows)
     problems = check(shows, failed)

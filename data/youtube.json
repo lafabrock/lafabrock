@@ -1,0 +1,7 @@
+{
+ "_comment": "Vidéos YouTube des émissions (versions mix exportées de DJ Studio), par identifiant d'émission. Les nouvelles vidéos de la chaîne dont le titre contient le code de l'épisode (s14e06, ou 1406 avec « fabrock ») sont ajoutées automatiquement chaque samedi. On peut aussi ajouter une ligne à la main.",
+ "channel_id": "UCd1uDHHQK28yFZn4ImBNW4w",
+ "videos": {
+  "s14e05": "https://www.youtube.com/watch?v=ojN5DAmTblM"
+ }
+}

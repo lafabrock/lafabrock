@@ -13,7 +13,7 @@
 
   // ---------- helpers ----------
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const safeUrl = u => { try { const x = new URL(u); return x.protocol === 'https:' && /(^|\.)(mixcloud\.com|hearthis\.at|hearthis\.app)$/.test(x.hostname) ? x.href : ''; } catch { return ''; } };
+  const safeUrl = u => { try { const x = new URL(u); return x.protocol === 'https:' && /(^|\.)(mixcloud\.com|hearthis\.at|hearthis\.app|youtube\.com|youtu\.be)$/.test(x.hostname) ? x.href : ''; } catch { return ''; } };
   const fold = s => String(s || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const norm = s => {
     let x = fold(s);

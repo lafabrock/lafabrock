@@ -17,8 +17,10 @@ Publié automatiquement par GitHub Pages depuis la branche `main`.
 - `data/overrides.json` : corrections par émission, par exemple la date de diffusion
 - `data/aliases.json` : graphies d'artistes à corriger
 - `data/slugs.json` : l'identifiant permanent de chaque émission (ne pas modifier)
+- `data/youtube.json` : la vidéo YouTube de chaque émission (versions mix sans voix), par identifiant
 - `tools/update_data.py` : reconstruit `data/shows.json` depuis Mixcloud et hearthis
 - `tools/postprocess.py` : identifiants, dates de diffusion, alias (lancé par `update_data.py`)
+- `tools/youtube.py` : repère les nouvelles vidéos de la chaîne YouTube et ajoute le lien « YouTube »
 - `tools/build_pages.py` : génère les pages statiques, le sitemap et les balises de partage
 - `.github/workflows/update.yml` : la mise à jour automatique hebdomadaire
 
@@ -45,6 +47,14 @@ tracklist supprimée exprès), lancer `python3 tools/update_data.py --force` en 
 
 En local : `pip install requests` puis `python3 tools/update_data.py` (environ 1 min) et
 `python3 tools/build_pages.py`. Ajouter `--no-hearthis` pour ignorer hearthis.
+
+## Vidéos YouTube
+Chaque samedi, le workflow lit aussi le flux public de la chaîne YouTube La fabrock (les 15 dernières
+vidéos). Une vidéo dont le titre contient le code de l'épisode (`s14e06`, ou `1406` avec « fabrock »
+dans le titre ou en début de titre) est ajoutée à `data/youtube.json`, et l'émission reçoit un bouton
+« Écouter sur YouTube ». Si le titre ne contient pas le code, ajouter la ligne à la main :
+`"s14e06": "https://www.youtube.com/watch?v=…"`, puis `python3 tools/postprocess.py` et
+`python3 tools/build_pages.py` (ou attendre le samedi). Une ligne écrite à la main n'est jamais remplacée.
 
 ## Corriger une date de diffusion
 Le site affiche la date de diffusion quand il la connaît, sinon la date de mise en ligne sur
