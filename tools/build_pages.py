@@ -110,7 +110,7 @@ HEAD = '''<!doctype html>
 <main class="wrap">
 '''
 FOOT = '''</main>
-<footer class="wrap foot">La fabrock, le grand mélange musical de Radio 666 · <a href="{rel}#/home">Les archives interactives</a> · <a href="{rel}show/">Toutes les émissions</a></footer>
+<footer class="wrap foot">La fabrock, le grand mélange musical de Radio 666 · <a href="{rel}#/home">Les archives interactives</a> · <a href="{rel}show/">Toutes les émissions</a><br>Suivre La fabrock : <a href="https://www.facebook.com/lafabrock" target="_blank" rel="noopener">Facebook</a> · <a href="https://www.youtube.com/@lafabrock" target="_blank" rel="noopener">YouTube</a> · <a href="https://www.instagram.com/lafabrockradio/" target="_blank" rel="noopener">Instagram</a></footer>
 </body>
 </html>
 '''

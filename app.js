@@ -1021,7 +1021,7 @@
     .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(raw => {
       DB = build(raw);
-      document.getElementById('foot').innerHTML = `Données mises à jour le ${fmtDate(raw.updated)} · ${plural(DB.shows.length, 'émission')} · Tracklists issues de Mixcloud et hearthis · <a href="show/">Liste de toutes les émissions</a>`;
+      document.getElementById('foot').innerHTML = `Données mises à jour le ${fmtDate(raw.updated)} · ${plural(DB.shows.length, 'émission')} · Tracklists issues de Mixcloud et hearthis · <a href="show/">Liste de toutes les émissions</a><br>Suivre La fabrock : <a href="https://www.facebook.com/lafabrock" target="_blank" rel="noopener">Facebook</a> · <a href="https://www.youtube.com/@lafabrock" target="_blank" rel="noopener">YouTube</a> · <a href="https://www.instagram.com/lafabrockradio/" target="_blank" rel="noopener">Instagram</a>`;
       render();
     })
     .catch(e => {
