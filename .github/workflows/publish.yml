@@ -1,0 +1,49 @@
+name: Publier sur Instagram et Facebook
+
+# Lancement manuel uniquement, après relecture du brouillon dans social/<épisode>/
+on:
+  workflow_dispatch:
+    inputs:
+      episode:
+        description: "Épisode à publier (ex. s14e06). Laisser vide = tous les brouillons en attente"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: archive-commits
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install requests pillow
+
+      - name: Publish the drafts
+        env:
+          META_PAGE_TOKEN: ${{ secrets.META_PAGE_TOKEN }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          EPISODE: ${{ inputs.episode }}
+        run: python3 tools/social.py publish $EPISODE
+
+      # garde la trace de ce qui est parti, même si une des deux publications a échoué
+      - name: Record what was published
+        if: always()
+        run: |
+          git config user.name "fabrock-bot"
+          git config user.email "actions@github.com"
+          git add social/
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: social posts published [skip ci]"
+          git pull --rebase -q && git push

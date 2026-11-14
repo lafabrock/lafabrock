@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: archive-commits
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -19,7 +23,9 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install requests
+        run: |
+          pip install requests pillow
+          sudo apt-get update -qq && sudo apt-get install -y -qq fonts-inter > /dev/null || echo "Inter indisponible, police de secours"
 
       # stops here (and GitHub e-mails you) if Mixcloud answered badly:
       # tracklists lost, shows missing… The published data is left untouched.
@@ -29,10 +35,16 @@ jobs:
       - name: Build the public pages (one page per show, sitemap, share tags)
         run: python3 tools/build_pages.py
 
+      # nouveaux épisodes -> brouillon Instagram/Facebook dans social/<épisode>/
+      # (rien n'est publié : relire, puis lancer « Publier sur Instagram et Facebook »)
+      - name: Prepare social media drafts
+        run: python3 tools/social.py prepare
+
       - name: Commit updated data (if changed)
         run: |
           git config user.name "fabrock-bot"
           git config user.email "actions@github.com"
-          git add data/ show/ sitemap.xml index.html
+          mkdir -p social
+          git add data/ show/ sitemap.xml index.html social/
           git diff --cached --quiet || git commit -m "chore: update show archive $(date -u +%F) [skip ci]"
           git push

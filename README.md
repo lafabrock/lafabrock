@@ -48,6 +48,28 @@ tracklist supprimée exprès), lancer `python3 tools/update_data.py --force` en 
 En local : `pip install requests` puis `python3 tools/update_data.py` (environ 1 min) et
 `python3 tools/build_pages.py`. Ajouter `--no-hearthis` pour ignorer hearthis.
 
+## Posts Instagram et Facebook
+Chaque samedi, quand le workflow trouve un **nouvel épisode** (`s14e06`…), il prépare un brouillon
+dans `social/<épisode>/` sans rien publier :
+- `01-cover.jpg` (la pochette Mixcloud en 1080 × 1080) puis `02-tracklist-1.jpg`… (la tracklist,
+  9 morceaux par image, aux couleurs de la saison 14) : le carrousel Instagram, 10 images au plus ;
+- `instagram.txt` : la légende (description sans les liens, « lien en bio », hashtags tirés des tags Mixcloud) ;
+- `facebook.txt` : le texte du post Facebook, avec le lien vers la page de l'émission sur le site.
+
+**Pour publier :** relire le brouillon dans GitHub (corriger `instagram.txt` ou `facebook.txt`
+directement si besoin, ou supprimer une image), puis onglet Actions → « Publier sur Instagram et
+Facebook » → Run workflow. Laisser le champ vide publie tous les brouillons en attente ; on peut aussi
+indiquer un épisode (`s14e06`). Une fois publié, le dossier reçoit `published.json` (liens des posts)
+et n'est plus jamais republié.
+
+Refaire un brouillon (par exemple après avoir corrigé la description sur Mixcloud) : lancer
+« Update archive and deploy », ou en local `python3 tools/social.py prepare s14e06`.
+
+Secrets du dépôt utilisés (Settings → Secrets and variables → Actions) : `META_PAGE_TOKEN` (jeton
+de la page Facebook La fabrock, sans expiration), `FB_PAGE_ID`, `IG_USER_ID`. Le jeton est lié à
+l'app Meta « La fabline » ; s'il cesse de marcher (mot de passe Facebook changé, droits retirés),
+en régénérer un dans l'explorateur de l'API Graph et remplacer le secret.
+
 ## Vidéos YouTube
 Chaque samedi, le workflow lit aussi le flux public de la chaîne YouTube La fabrock (les 15 dernières
 vidéos). Une vidéo dont le titre contient le code de l'épisode (`s14e06`, ou `1406` avec « fabrock »
