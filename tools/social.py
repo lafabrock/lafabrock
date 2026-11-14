@@ -256,9 +256,11 @@ def make_listen(show, path):
     d.text((70, 60), "Où écouter", font=font("bold", 60), fill=WHITE)
     draw_frame(d, show["slug"], "")
     sites = {l.get("site") for l in show.get("links", [])} | {"Mixcloud"}
-    rows = [("Mixcloud", "l'émission complète, avec la voix")]
+    live = re.search(r"(s\d+e\d+|\b\d{4})\s*[-–:]?\s*live\b", show.get("name") or "", re.I)
+    rows = [("Mixcloud", "l'émission live, avec la voix et la tracklist" if live
+             else "le mix complet, avec la tracklist")]
     if "YouTube" in sites:
-        rows.append(("YouTube", "la version mix, sans la voix"))
+        rows.append(("YouTube", "le mix, avec la pochette de chaque morceau"))
     if "open.spotify.com" in (show.get("description") or ""):
         rows.append(("Spautifaille", "la playlist Spotify de l'épisode"))
     rows.append(("Les archives", "toutes les tracklists depuis 2012"))
