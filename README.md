@@ -63,8 +63,9 @@ Facebook » → Run workflow. Laisser le champ vide publie tous les brouillons e
 indiquer un épisode (`s14e06`). Une fois publié, le dossier reçoit `published.json` (liens des posts)
 et n'est plus jamais republié.
 
-Refaire un brouillon (par exemple après avoir corrigé la description sur Mixcloud) : lancer
-« Update archive and deploy », ou en local `python3 tools/social.py prepare s14e06`.
+Faire ou refaire le brouillon d'un épisode précis (par exemple après avoir corrigé la description
+sur Mixcloud) : onglet Actions → « Préparer un brouillon Instagram/Facebook » → Run workflow, en
+indiquant l'épisode (`s14e06`). En local : `python3 tools/social.py prepare s14e06`.
 
 Secrets du dépôt utilisés (Settings → Secrets and variables → Actions) : `META_PAGE_TOKEN` (jeton
 de la page Facebook La fabrock, sans expiration), `FB_PAGE_ID`, `IG_USER_ID`. Le jeton est lié à
