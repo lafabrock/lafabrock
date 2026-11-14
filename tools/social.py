@@ -5,7 +5,7 @@ Deux temps, pour garder une relecture humaine entre les deux :
 
   python3 tools/social.py prepare            # nouveaux épisodes depuis le dernier commit
   python3 tools/social.py prepare s14e06     # un épisode précis (re-génère le brouillon)
-      -> social/<slug>/ : 01-cover.jpg, 02-tracklist-1.jpg…, instagram.txt, facebook.txt
+      -> social/<slug>/ : 01-cover.jpg, 02-affiche.jpg, 03-ou-ecouter.jpg, instagram.txt, facebook.txt
 
   python3 tools/social.py publish            # tous les brouillons pas encore publiés
   python3 tools/social.py publish s14e06     # un épisode précis
@@ -40,7 +40,6 @@ BG = (0x23, 0x1F, 0x20)
 TURQUOISE = (0x05, 0xAD, 0xAA)
 WHITE = (255, 255, 255)
 GREY = (0xB5, 0xB0, 0xB1)
-TRACKS_PER_SLIDE = 9
 MAX_CAROUSEL = 10  # limite de l'API Instagram
 MAX_HASHTAGS = 12
 
@@ -174,34 +173,104 @@ def draw_frame(draw, slug, page_label):
               font=small, fill=GREY)
 
 
-def make_tracklist_slides(show, folder, start_index, max_slides):
+SEPARATORS = re.compile(r"\s+(?:feat\.?|ft\.?|featuring|with|vs\.?|x|et)\s+", re.I)
+
+
+def lineup(show):
+    """Artistes de l'épisode : ceux du titre d'abord (têtes d'affiche), puis les autres."""
+    seen, artists = set(), []
+    for t in show.get("tracks", []):
+        if not t or t[0] != "track":
+            continue
+        for a in SEPARATORS.split(t[1] or ""):
+            a = a.strip(" ,;")
+            if a and a.lower() not in seen:
+                seen.add(a.lower())
+                artists.append(a)
+    title = (show.get("name") or "").split("|")[-1].lower()
+    heads = sorted((a for a in artists if a.lower() in title), key=lambda a: title.find(a.lower()))
+    return heads, [a for a in artists if a not in heads]
+
+
+def layout_lines(draw, words, f, width, sep):
+    lines, cur = [], []
+    for w in words:
+        trial = sep.join(cur + [w])
+        if cur and draw.textlength(trial, font=f) > width:
+            lines.append(cur)
+            cur = [w]
+        else:
+            cur.append(w)
+    if cur:
+        lines.append(cur)
+    return lines
+
+
+def draw_centered_line(d, y, words, f, colors, sep):
+    total = d.textlength(sep.join(words), font=f)
+    x = (SIZE - total) / 2
+    for i, w in enumerate(words):
+        if i:
+            d.text((x, y), sep, font=f, fill=TURQUOISE)
+            x += d.textlength(sep, font=f)
+        d.text((x, y), w, font=f, fill=colors[i % len(colors)])
+        x += d.textlength(w, font=f)
+
+
+def make_poster(show, path):
+    """Affiche façon festival : têtes d'affiche en grand, puis tous les autres artistes."""
     from PIL import Image, ImageDraw
-    tracks = [t for t in show.get("tracks", []) if t and t[0] == "track"]
-    chunks = [tracks[i:i + TRACKS_PER_SLIDE] for i in range(0, len(tracks), TRACKS_PER_SLIDE)]
-    chunks = chunks[:max_slides]
-    title_f, artist_f, song_f, num_f = (font("bold", 60), font("bold", 32),
-                                        font("regular", 28), font("bold", 32))
-    paths, n = [], 0
-    for k, chunk in enumerate(chunks, 1):
+    heads, others = lineup(show)
+    if not heads and others:
+        heads, others = others[:3], others[3:]
+    width, top, bottom = SIZE - 140, 180, SIZE - 230
+    sep = "  ·  "
+    for scale in [x / 100 for x in range(100, 30, -5)]:
         img = Image.new("RGB", (SIZE, SIZE), BG)
         d = ImageDraw.Draw(img)
-        d.text((70, 60), "Tracklist", font=title_f, fill=WHITE)
-        draw_frame(d, show["slug"], f"{k}/{len(chunks)}")
-        y = 170
-        for t in chunk:
-            n += 1
-            artist, song = t[1] or "", t[2] or ""
-            d.text((70, y), f"{n:02d}", font=num_f, fill=TURQUOISE)
-            d.text((140, y), fit(d, artist, artist_f, SIZE - 210), font=artist_f, fill=WHITE)
-            d.text((140, y + 36), fit(d, song, song_f, SIZE - 210), font=song_f, fill=GREY)
-            y += 76
-        p = folder / f"{start_index + k - 1:02d}-tracklist-{k}.jpg"
-        save_jpeg(img, p)
-        paths.append(p)
-    if len(tracks) > TRACKS_PER_SLIDE * len(chunks):
-        print(f"  ! {len(tracks)} morceaux : la tracklist est coupée après "
-              f"{TRACKS_PER_SLIDE * len(chunks)} (limite de {MAX_CAROUSEL} images)")
-    return paths
+        hf, of = font("bold", int(64 * scale)), font("bold", int(38 * scale))
+        hl = layout_lines(d, [h.upper() for h in heads], hf, width, sep)
+        ol = layout_lines(d, others, of, width, sep)
+        hgap, ogap = int(64 * scale * 1.25), int(38 * scale * 1.35)
+        height = len(hl) * hgap + (30 if ol else 0) + len(ol) * ogap
+        if height <= bottom - top:
+            break
+    d.text((70, 60), "Au programme", font=font("bold", 60), fill=WHITE)
+    draw_frame(d, show["slug"], "")
+    y = top + (bottom - top - height) // 2
+    for line in hl:
+        draw_centered_line(d, y, line, hf, [WHITE], sep)
+        y += hgap
+    y += 30
+    for line in ol:
+        draw_centered_line(d, y, line, of, [(0xD9, 0xD4, 0xD5), GREY], sep)
+        y += ogap
+    save_jpeg(img, path)
+
+
+def make_listen(show, path):
+    """Dernière slide : où écouter l'émission."""
+    from PIL import Image, ImageDraw
+    img = Image.new("RGB", (SIZE, SIZE), BG)
+    d = ImageDraw.Draw(img)
+    d.text((70, 60), "Où écouter", font=font("bold", 60), fill=WHITE)
+    draw_frame(d, show["slug"], "")
+    sites = {l.get("site") for l in show.get("links", [])} | {"Mixcloud"}
+    rows = [("Mixcloud", "l'émission complète, avec la voix")]
+    if "YouTube" in sites:
+        rows.append(("YouTube", "la version mix, sans la voix"))
+    if "open.spotify.com" in (show.get("description") or ""):
+        rows.append(("Spautifaille", "la playlist Spotify de l'épisode"))
+    rows.append(("Les archives", "toutes les tracklists depuis 2012"))
+    y = 200
+    for name, what in rows:
+        d.text((70, y), name, font=font("bold", 50), fill=TURQUOISE)
+        d.text((70, y + 60), what, font=font("regular", 34), fill=GREY)
+        y += 130
+    d.text((70, y + 20), "Liens en bio", font=font("bold", 40), fill=WHITE)
+    d.text((70, y + 75), "Chaque jeudi, 23 h – minuit, sur Radio 666", font=font("regular", 34),
+           fill=WHITE)
+    save_jpeg(img, path)
 
 
 def prepare(slug, shows):
@@ -221,8 +290,9 @@ def prepare(slug, shows):
     except Exception as e:  # la pochette n'est pas indispensable
         have_cover = False
         print(f"  ! pochette non récupérée ({e})")
-    start = 2 if have_cover else 1
-    make_tracklist_slides(show, folder, start, MAX_CAROUSEL - (start - 1))
+    n = 2 if have_cover else 1
+    make_poster(show, folder / f"{n:02d}-affiche.jpg")
+    make_listen(show, folder / f"{n + 1:02d}-ou-ecouter.jpg")
     insta, fb, _ = captions(show)
     (folder / "instagram.txt").write_text(insta + "\n", "utf-8")
     (folder / "facebook.txt").write_text(fb + "\n", "utf-8")

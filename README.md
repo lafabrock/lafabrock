@@ -51,8 +51,9 @@ En local : `pip install requests` puis `python3 tools/update_data.py` (environ 1
 ## Posts Instagram et Facebook
 Chaque samedi, quand le workflow trouve un **nouvel épisode** (`s14e06`…), il prépare un brouillon
 dans `social/<épisode>/` sans rien publier :
-- `01-cover.jpg` (la pochette Mixcloud en 1080 × 1080) puis `02-tracklist-1.jpg`… (la tracklist,
-  9 morceaux par image, aux couleurs de la saison 14) : le carrousel Instagram, 10 images au plus ;
+- le carrousel Instagram : `01-cover.jpg` (la pochette Mixcloud en 1080 × 1080), `02-affiche.jpg`
+  (tous les artistes façon affiche de festival, ceux du titre en tête d'affiche) et `03-ou-ecouter.jpg`
+  (Mixcloud, YouTube, Spautifaille, les archives) ;
 - `instagram.txt` : la légende (description sans les liens, « lien en bio », hashtags tirés des tags Mixcloud) ;
 - `facebook.txt` : le texte du post Facebook, avec le lien vers la page de l'émission sur le site.
 
